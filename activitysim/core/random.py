@@ -12,6 +12,7 @@ import hashlib
 
 import numpy as np
 import pandas as pd
+from activitysim.core.util import reindex
 
 from .tracing import print_elapsed_time
 
@@ -194,6 +195,11 @@ class SimpleChannel(object):
         """
 
         # assert no dupes
+        #bug
+        if len(df.index.unique()) < len(df.index):
+            #print(df)
+            bug
+
         assert len(df.index.unique()) == len(df.index)
 
         df_row_states = self.row_states.loc[df.index]
@@ -250,10 +256,10 @@ class SimpleChannel(object):
         self.row_states.loc[df.index, 'offset'] += n
         return rands
 
-    def lognormal_for_df(self, df, step_name, mu, sigma):
+    def normal_for_df(self, df, step_name, mu, sigma, lognormal=False):
         """
-        Return a floating point random number in lognormal distribution for each row in df
-        using the appropriate random channel for each row.
+        Return a floating point random number in normal (or lognormal) distribution
+        for each row in df using the appropriate random channel for each row.
 
         Subsequent calls (in the same step) will return the next rand for each df row
 
@@ -296,9 +302,14 @@ class SimpleChannel(object):
         mu = to_series(mu)
         sigma = to_series(sigma)
 
-        rands = \
-            np.asanyarray([prng.lognormal(mean=mu[i], sigma=sigma[i])
-                           for i, prng in enumerate(generators)])
+        if lognormal:
+            rands = \
+                np.asanyarray([prng.lognormal(mean=mu[i], sigma=sigma[i])
+                               for i, prng in enumerate(generators)])
+        else:
+            rands = \
+                np.asanyarray([prng.normal(loc=mu[i], scale=sigma[i])
+                               for i, prng in enumerate(generators)])
 
         # update offset for rows we handled
         self.row_states.loc[df.index, 'offset'] += 1
@@ -599,9 +610,9 @@ class Random(object):
         rands = channel.random_for_df(df, self.step_name, n)
         return rands
 
-    def lognormal_for_df(self, df, mu, sigma):
+    def normal_for_df(self, df, mu=0, sigma=1, broadcast=False):
         """
-        Return a single floating point random number in range [0, 1) for each row in df
+        Return a single floating point normal random number in range (-inf, inf) for each row in df
         using the appropriate random channel for each row.
 
         Subsequent calls (in the same step) will return the next rand for each df row
@@ -628,12 +639,65 @@ class Random(object):
 
         Returns
         -------
-        rands : 1-D ndarray the same length as df
+        rands : 1-D ndarray the same length as df (or Series with same index as df)
             a single float in lognormal distribution for each row in df
         """
 
         channel = self.get_channel_for_df(df)
-        rands = channel.lognormal_for_df(df, self.step_name, mu, sigma)
+
+        if broadcast:
+            alts_df = df
+            df = df.index.unique().to_series()
+            rands = channel.normal_for_df(df, self.step_name, mu=0, sigma=1, lognormal=False)
+            rands = reindex(pd.Series(rands, index=df.index), alts_df.index)
+            rands = rands*sigma + mu
+        else:
+            rands = channel.normal_for_df(df, self.step_name, mu, sigma, lognormal=False)
+
+        return rands
+
+    def lognormal_for_df(self, df, mu, sigma, broadcast=False):
+        """
+        Return a single floating point lognormal random number in range [0, inf) for each row in df
+        using the appropriate random channel for each row.
+
+        Subsequent calls (in the same step) will return the next rand for each df row
+
+        The resulting array will be the same length (and order) as df
+        This method is designed to support alternative selection from a probability array
+
+        The columns in df are ignored; the index name and values are used to determine
+        which random number sequence to to use.
+
+        We assume that we can identify the channel to used based on the name of df.index
+        This channel should have already been registered by a call to add_channel (q.v.)
+
+        If "true pseudo random" behavior is desired (i.e. NOT repeatable) the set_base_seed
+        method (q.v.) may be used to globally reseed all random streams.
+
+        Parameters
+        ----------
+        df : pandas.DataFrame, Series, or Index
+            df with index name and values corresponding to a registered channel
+
+        mu : float or array of floats with one value per df row
+        sigma : float or array of floats with one value per df row
+
+        Returns
+        -------
+        rands : 1-D ndarray the same length as df (or Series with same index as df)
+            a single float in lognormal distribution for each row in df
+        """
+
+        if broadcast:
+            # Note that the mean and standard deviation are not the values for the distribution itself,
+            # but of the underlying normal distribution it is derived from.
+            rands = self.normal_for_df(df, mu=mu, sigma=sigma, broadcast=True)
+            rands = np.exp(rands)
+        else:
+            channel = self.get_channel_for_df(df)
+            rands = channel.normal_for_df(df, self.step_name, mu=mu, sigma=sigma, lognormal=True)
+
         return rands
 
     def choice_for_df(self, df, a, size, replace):

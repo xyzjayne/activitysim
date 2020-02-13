@@ -53,7 +53,7 @@ def compute_logsums(choosers,
                     tour_purpose,
                     logsum_settings, model_settings,
                     skim_dict, skim_stack,
-                    chunk_size, trace_hh_id, trace_label):
+                    chunk_size, trace_label):
     """
 
     Parameters
