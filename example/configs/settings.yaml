@@ -22,6 +22,8 @@ skims_file: skims.omx
 # convert input CSVs to HDF5 format and save to outputs directory
 # create_input_store: True
 
+#input_store: ../output/input_data.h5
+
 # number of households to simulate
 households_sample_size:  100
 # simulate all households
