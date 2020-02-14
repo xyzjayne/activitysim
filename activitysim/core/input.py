@@ -92,8 +92,8 @@ def read_from_table_info(table_info):
         logger.info('writing %s to %s' % (h5_tablename, h5_filepath))
         df.to_hdf(h5_filepath, key=h5_tablename, mode='a')
 
-        #bug
-        #df.to_csv(config.output_file_path('input_data/%s.csv' % tablename), index=True)
+        # bug
+        # df.to_csv(config.output_file_path('input_data/%s.csv' % tablename), index=True)
 
     if drop_columns:
         for c in drop_columns:
