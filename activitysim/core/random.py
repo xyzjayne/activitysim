@@ -195,11 +195,6 @@ class SimpleChannel(object):
         """
 
         # assert no dupes
-        # bug
-        if len(df.index.unique()) < len(df.index):
-            # print(df)
-            bug
-
         assert len(df.index.unique()) == len(df.index)
 
         df_row_states = self.row_states.loc[df.index]
@@ -656,10 +651,20 @@ class Random(object):
 
         return rands
 
-    def lognormal_for_df(self, df, mu, sigma, broadcast=False):
+    def lognormal_for_df(self, df, mu, sigma, broadcast=False, scale=False):
         """
         Return a single floating point lognormal random number in range [0, inf) for each row in df
         using the appropriate random channel for each row.
+
+        Note that by default (scale=False) the mean and standard deviation are not the values for
+        the distribution itself, but of the underlying normal distribution it is derived from.
+        This is perhaps counter-intuitive, but it is the way the numpy standard works,
+        and so we are conforming to it here.
+
+        If scale=True, then mu and sigma are the desired mean and standard deviation of the
+        lognormal distribution instead of the numpy standard where mu and sigma which are the
+        values for the distribution itself, rather than of the underlying normal distribution
+        it is derived from.
 
         Subsequent calls (in the same step) will return the next rand for each df row
 
@@ -689,9 +694,14 @@ class Random(object):
             a single float in lognormal distribution for each row in df
         """
 
+        if scale:
+            # location = ln(mean/sqrt(1 + std_dev^2/mean^2))
+            # scale = sqrt(ln(1 + std_dev^2/mean^2))
+            x = 1 + ((sigma * sigma) / (mu * mu))
+            mu = np.log(mu / (np.sqrt(x)))
+            sigma = np.sqrt(np.log(x))
+
         if broadcast:
-            # Note that the mean and standard deviation are not the values for the distribution
-            # itself, but of the underlying normal distribution it is derived from.
             rands = self.normal_for_df(df, mu=mu, sigma=sigma, broadcast=True)
             rands = np.exp(rands)
         else:
@@ -747,41 +757,3 @@ class Random(object):
         choices = channel.choice_for_df(df, self.step_name, a, size, replace)
         t0 = print_elapsed_time("choice_for_df for %s rows" % len(df.index), t0, debug=True)
         return choices
-
-    def calculate_location(self, mean, std_dev):
-        """
-        Calculate the lognormal distribution location given the mean and standard
-        deviation of the distribution according to the formula
-
-        scale = sqrt(ln(1 + std_dev^2/mean^2))
-
-        Parameters
-        ----------
-        mean : float
-        std_dev : float
-
-        Returns
-        -------
-        location : lognormal distribution location
-        """
-        location = np.log(mean / (np.sqrt(1 + ((std_dev * std_dev) / (mean * mean)))))
-        return(location)
-
-    def calculate_scale(self, mean, std_dev):
-        """
-        Calculate the lognormal distribution scale given the mean and standard
-        deviation of the distribution according to the formula
-
-        location = ln(mean/sqrt(1 + std_dev^2/mean^2))
-
-        Parameters
-        ----------
-        mean : float
-        std_dev : float
-
-        Returns
-        -------
-        scale : lognormal distribution scale
-        """
-        scale = np.sqrt(np.log(1 + ((std_dev * std_dev) / (mean * mean))))
-        return(scale)

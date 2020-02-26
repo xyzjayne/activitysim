@@ -466,7 +466,8 @@ def trace_targets(df, slicer=None):
         if column is None:
             targets = df.index.isin(target_ids)
         else:
-            targets = df[column].isin(target_ids)
+            # convert to numpy array for consistency since that is what index.isin returns
+            targets = df[column].isin(target_ids).to_numpy()
 
     return targets
 

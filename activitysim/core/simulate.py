@@ -50,7 +50,6 @@ def uniquify_spec_index(spec):
     for expr in spec.index:
         dict[assign.uniquify_key(dict, expr, template="{} # ({})")] = expr
 
-    # bug
     prev_index_name = spec.index.name
     spec.index = list(dict.keys())
     spec.index.name = prev_index_name
@@ -193,6 +192,7 @@ def eval_utilities(spec, choosers, locals_d=None, trace_label=None, have_trace_t
 
         # get int offsets of the trace_targets (offsets of bool=True values)
         trace_targets = tracing.trace_targets(choosers)
+
         offsets = np.nonzero(trace_targets)[0]
 
         # get array of expression_values
