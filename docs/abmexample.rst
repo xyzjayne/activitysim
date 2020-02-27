@@ -184,8 +184,8 @@ Trip modes
 ~~~~~~~~~~
 
 The trip modes defined in the example model are below. The modes include auto by
-occupancy and toll/non-toll choice, walk and bike, and walk and drive access to five different
-transit line-haul modes.
+occupancy and toll/non-toll choice, walk and bike, walk and drive access to five different
+transit line-haul modes, and mobility-as-a-service with taxi, TNC single, and TNC shared.
 
   1. Auto - SOV (Free)
   2. Auto - SOV (Pay)
@@ -205,6 +205,9 @@ transit line-haul modes.
   16. Drive to Express Bus
   17. Drive to Bus Rapid Transit
   18. Drive to Heavy Rail
+  19. Taxi
+  20. TNC Single
+  21. TNC Shared 
 
 Sub-models
 ~~~~~~~~~~
