@@ -6,7 +6,7 @@ from future.standard_library import install_aliases
 install_aliases()  # noqa: E402
 
 import logging
-
+import os
 import pandas as pd
 
 from activitysim.core import tracing
@@ -136,6 +136,22 @@ def preload_injectables():
         new_settings = inject.get_injectable('settings')
         new_settings['input_table_list'] = DEFAULT_TABLE_LIST
         inject.add_injectable('settings', new_settings)
+
+    #bug
+    if config.setting('write_raw_tables'):
+
+        # write raw input tables as csv (before annotation)
+        csv_dir = config.output_file_path('raw_tables')
+        if not os.path.exists(csv_dir):
+            os.makedirs(csv_dir)  # make directory if needed
+
+        table_names = [t['tablename'] for t in table_list]
+        for t in table_names:
+            df = inject.get_table(t).to_frame()
+            if t=='households':
+                df.drop(columns='chunk_id', inplace=True)
+            df.to_csv(os.path.join(csv_dir, '%s.csv' % t), index=True)
+    #bug
 
     t0 = tracing.print_elapsed_time()
 

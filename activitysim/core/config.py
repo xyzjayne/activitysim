@@ -181,6 +181,8 @@ def read_model_settings(file_name, mandatory=False):
 
     model_settings = read_settings_file(file_name, mandatory=mandatory)
 
+    model_settings['source_file_path'] = file_name
+
     return model_settings
 
 
@@ -257,7 +259,7 @@ def cascading_input_file_path(file_name, dir_list_injectable_name, mandatory=Tru
 
     if mandatory and not file_path:
         raise RuntimeError("file_path %s: file '%s' not in %s" %
-                           (dir_list_injectable_name, file_path, dir_list))
+                           (dir_list_injectable_name, file_name, dir_list))
 
     return file_path
 

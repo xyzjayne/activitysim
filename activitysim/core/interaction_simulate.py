@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 DUMP = False
 
 
-def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows):
+def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows, estimation_hook=None):
     """
     Compute the utilities for a single-alternative spec evaluated in the context of df
 
@@ -98,6 +98,14 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows):
     utilities = pd.DataFrame({'utility': 0.0}, index=df.index)
     no_variability = has_missing_vals = 0
 
+
+    if estimation_hook is not None:
+        #expression_values_df = pd.DataFrame(index=df.index)
+        #expression_values_df.index.name = df.index.name
+        # first column is alt id
+        expression_values_df = df[[df.columns[0]]].copy()
+
+
     for expr, coefficient in zip(spec.index, spec.iloc[:, 0]):
         try:
 
@@ -130,6 +138,10 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows):
                 logger.info("%s: missing values in: %s" % (trace_label, expr))
                 has_missing_vals += 1
 
+            if estimation_hook is not None:
+                expression_values_df.insert(loc=len(expression_values_df.columns), column=expr, value=v)
+                #expression_values_df.insert(loc=len(expression_values_df.columns), column='coefficient', value=coefficient, allow_duplicates=True)
+
             utilities.utility += (v * coefficient).astype('float')
 
             if trace_eval_results is not None:
@@ -148,6 +160,16 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows):
             raise err
 
         # mem.trace_memory_info("eval_interaction_utilities: %s" % expr)
+
+    if estimation_hook is not None:
+        estimation_hook(expression_values_df, 'interaction_expression_values')
+        del expression_values_df
+
+        # add alt_column for legibility
+        alt_column_name = df.columns[0]
+        utilities.insert(loc=0, column=alt_column_name, value=df[alt_column_name])
+        estimation_hook(utilities, 'utilities')
+        utilities.drop(columns=alt_column_name, inplace=True)
 
     if no_variability > 0:
         logger.warning("%s: %s columns have no variability" % (trace_label, no_variability))

@@ -92,13 +92,17 @@ def read_from_table_info(table_info):
         logger.info('writing %s to %s' % (h5_tablename, h5_filepath))
         df.to_hdf(h5_filepath, key=h5_tablename, mode='a')
 
-        # write as csv
-        # df.to_csv(config.output_file_path('input_data/%s.csv' % tablename), index=True)
+        csv_dir = config.output_file_path('input_data')
+        if not os.path.exists(csv_dir):
+            os.makedirs(csv_dir)  # make directory if needed
+        df.to_csv(os.path.join(csv_dir, '%s.csv' % tablename), index=False)
 
     if drop_columns:
-        for c in drop_columns:
-            logger.info("dropping column '%s'" % c)
-            del df[c]
+        df.drop(columns=drop_columns, inplace=True, errors='ignore')
+        # for c in drop_columns:
+        #     logger.info("dropping column '%s'" % c)
+        #     if c in df:
+        #         del df[c]
 
     if column_map:
         df.rename(columns=column_map, inplace=True)

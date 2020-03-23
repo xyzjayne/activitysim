@@ -19,15 +19,19 @@ from activitysim.core import tracing
 from activitysim.core import config
 from activitysim.core.config import setting
 from activitysim.core import pipeline
+from activitysim.core import inject
 
 logger = logging.getLogger('activitysim')
 
 
 def run():
+    inject.add_injectable('data_dir', ['data', '../example/data'])
+    inject.add_injectable('configs_dir', ['configs', '../example/configs'])
+
     config.handle_standard_args()
 
     # specify None for a pseudo random base seed
-    # inject.add_injectable(setting('rng_base_seed', 0))
+    inject.add_injectable('rng_base_seed', setting('rng_base_seed', 0))
 
     tracing.config_logger()
     config.filter_warnings()

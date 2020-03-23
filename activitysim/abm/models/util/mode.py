@@ -7,10 +7,9 @@ install_aliases()  # noqa: E402
 import pandas as pd
 
 from activitysim.core import simulate
-from activitysim.core import config
-from activitysim.core.assign import evaluate_constants
 
 from . import expressions
+from . import estimation
 
 
 """
@@ -18,23 +17,6 @@ At this time, these utilities are mostly for transforming the mode choice
 spec, which is more complicated than the other specs, into something that
 looks like the other specs.
 """
-
-
-def tour_mode_choice_spec(model_settings):
-
-    assert 'SPEC' in model_settings
-
-    return simulate.read_model_spec(file_name=model_settings['SPEC'])
-
-
-def tour_mode_choice_coeffecients_spec(model_settings):
-
-    assert 'COEFFS' in model_settings
-    coeffs_file_name = model_settings['COEFFS']
-
-    file_path = config.config_file_path(coeffs_file_name)
-    return pd.read_csv(file_path, comment='#', index_col='Expression')
-
 
 def run_tour_mode_choice_simulate(
         choosers,
@@ -51,8 +33,10 @@ def run_tour_mode_choice_simulate(
     you want to use in the evaluation of variables.
     """
 
-    omnibus_coefficient_spec = tour_mode_choice_coeffecients_spec(model_settings)
-    locals_dict = evaluate_constants(omnibus_coefficient_spec[tour_purpose], constants=constants)
+    coefficients = simulate.get_segment_coefficients(model_settings, tour_purpose)
+    spec = simulate.eval_coefficients(spec, coefficients)
+
+    locals_dict = {}
     locals_dict.update(constants)
     locals_dict.update(skims)
 
@@ -66,6 +50,13 @@ def run_tour_mode_choice_simulate(
         choosers, locals_dict, skims,
         model_settings, trace_label)
 
+    if estimation.estimating():
+        # write choosers after annotation
+        estimation.write_choosers(choosers)
+        estimation_hook = estimation.write_hook
+    else:
+        estimation_hook = None
+
     choices = simulate.simple_simulate(
         choosers=choosers,
         spec=spec,
@@ -74,7 +65,8 @@ def run_tour_mode_choice_simulate(
         locals_d=locals_dict,
         chunk_size=chunk_size,
         trace_label=trace_label,
-        trace_choice_name=trace_choice_name)
+        trace_choice_name=trace_choice_name,
+        estimation_hook=estimation_hook)
 
     alts = spec.columns
     choices = choices.map(dict(list(zip(list(range(len(alts))), alts))))

@@ -83,6 +83,10 @@ def size_table_name(model_selector):
     return "%s_destination_size" % model_selector
 
 
+def use_shadow_pricing():
+    return bool(config.setting('use_shadow_pricing'))
+
+
 class ShadowPriceCalculator(object):
 
     def __init__(self, model_settings, num_processes, shared_data=None, shared_data_lock=None):
@@ -104,13 +108,12 @@ class ShadowPriceCalculator(object):
         """
 
         self.num_processes = num_processes
-        self.use_shadow_pricing = bool(config.setting('use_shadow_pricing'))
         self.saved_shadow_price_file_path = None  # set by read_saved_shadow_prices if loaded
 
         self.model_selector = model_settings['MODEL_SELECTOR']
 
         full_model_run = config.setting('households_sample_size') == 0
-        if self.use_shadow_pricing and not full_model_run:
+        if use_shadow_pricing() and not full_model_run:
             logging.warning("deprecated combination of use_shadow_pricing and not full_model_run")
 
         self.segment_ids = model_settings['SEGMENT_IDS']
@@ -118,7 +121,7 @@ class ShadowPriceCalculator(object):
         # - modeled_size (set by call to set_choices/synchronize_choices)
         self.modeled_size = None
 
-        if self.use_shadow_pricing:
+        if use_shadow_pricing():
             self.shadow_settings = config.read_model_settings('shadow_pricing.yaml')
 
             for k in self.shadow_settings:
@@ -136,7 +139,7 @@ class ShadowPriceCalculator(object):
         self.shared_data_lock = shared_data_lock
 
         # - load saved shadow_prices (if available) and set max_iterations accordingly
-        if self.use_shadow_pricing:
+        if use_shadow_pricing():
             self.shadow_prices = None
             self.shadow_price_method = self.shadow_settings['SHADOW_PRICE_METHOD']
             assert self.shadow_price_method in ['daysim', 'ctramp']
@@ -330,7 +333,7 @@ class ShadowPriceCalculator(object):
 
         # fixme
 
-        if not self.use_shadow_pricing:
+        if not use_shadow_pricing():
             return False
 
         assert self.modeled_size is not None
@@ -415,7 +418,7 @@ class ShadowPriceCalculator(object):
         updates self.shadow_prices
         """
 
-        assert self.use_shadow_pricing
+        assert use_shadow_pricing()
 
         shadow_price_method = self.shadow_settings['SHADOW_PRICE_METHOD']
 
@@ -497,7 +500,7 @@ class ShadowPriceCalculator(object):
         size_term_adjustment = 1
         utility_adjustment = 0
 
-        if self.use_shadow_pricing:
+        if use_shadow_pricing():
 
             shadow_price_method = self.shadow_settings['SHADOW_PRICE_METHOD']
 
@@ -538,7 +541,7 @@ class ShadowPriceCalculator(object):
                           'shadow_price_%s_modeled_size_%s' % (self.model_selector, iteration),
                           transpose=False)
 
-        if self.use_shadow_pricing:
+        if use_shadow_pricing():
             tracing.write_csv(self.shadow_prices,
                               'shadow_price_%s_shadow_prices_%s' % (self.model_selector, iteration),
                               transpose=False)
@@ -769,8 +772,6 @@ def add_size_tables():
     (size table) counts.
     """
 
-    use_shadow_pricing = bool(config.setting('use_shadow_pricing'))
-
     shadow_settings = config.read_model_settings('shadow_pricing.yaml')
     shadow_pricing_models = shadow_settings['shadow_pricing_models']
 
@@ -806,7 +807,7 @@ def add_size_tables():
         raw_size = tour_destination_size_terms(land_use, size_terms, model_selector)
         assert set(raw_size.columns) == set(segment_ids.keys())
 
-        if use_shadow_pricing or scale_size_table:
+        if use_shadow_pricing() or scale_size_table:
 
             inject.add_table('raw_' + size_table_name(model_selector), raw_size)
 

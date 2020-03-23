@@ -1,0 +1,115 @@
+10K sample csv
+Separate coefficients and write out
+Choosers table
+Expression values by chooser row x alternative
+
+
+The basic workflow:
+Run a 10k household sample up through a model such as tour_mode_choice to create a synthetic version of a household travel survey in activitysim format up to that point.  In reality the user uses their actual household survey and not a synthetic one, but this is a detail for subsequent work on this task.
+The output pipeline then becomes the input to running activitysim in estimation mode
+We then run just tour_mode_choice again, but this time with estimation mode set to true to write out all the required data for re-estimating the model
+
+We're calling this the estimation data bundle
+Which is a subset of the trace data, but for every household :
+    chooser table
+    expression values table
+    raw_utilities table (to determine if alternatives are available)
+    Plus model specification inputs such as the yaml, spec, and coefficients file
+
+
+We need to better separate coefficients from data so the coefficients can be re-estimated in the estimation tool
+and then easily passed back to asim for model simulation.
+I think this means every logit model needs an explicit coefficients.csv input file now.
+
+If destination sampling is done, then the observed alternative may not be in the estimation data bundle.
+Therefore, we'll just run it without sampling for now so we get all the alternatives.
+It should be ok since the sample size is not very big.
+
+Getting started:
+We will prototype tour mode choice
+We will use CSV formats
+@JeffDoyle create the 10k HH asim format HH survey through tour_mode_choice
+@JeffDoyle clean-up coefficients separation and write out the estimation data bundle
+
+
+Here are my comments on the estimation data bundle (EDB):
+
+
+1)	Add the (observed) choice, which in this case is the mode.  This is needed for estimation since the estimation software needs to know the observed choices so it can optimize a set of coefficients across all the choosers that result in those choices being the most likely.  This is probably a separate file like tour_mode_choice.eatout.simple_simulate.eval_nl.choices.csv. Will add, but perhaps not segment by purpose?
+
+4)	tour_mode_choice_expression_values.csv – I think this file should be formatted as tour_id, expression, value instead of using the expression as the column name.  I think the expressions as column names will cause problems since they have a lot of special characters.  I agree about them being problematic as solumn names. As for the layout, I agree tis is better if the target is a human reader, but is it for humans, or the input to elm, in which cse, what is the desired format? I wodl like to better understand how the whole process works so my intuition willb e better about what to provide…
+5)	tour_mode_choice_model_constants.yaml – I don’t think we need this since we have tour_mode_choice_model_settings.yaml.  I do like including tour_mode_choice_model_settings.yaml in the EDB. Yes, this is only needed if they are using cascading settigns files and content is inherited from elsewhere.
+6)	tour_mode_choice_nest_spec.yaml – I think we don’t need this file either. Yes, this is only needed if they are using cascading settigns files and content is inherited from elsewhere.
+
+
+
+
+Can you make these changes and then send the EDB to Newman for review and cc me?
+
+############
+Sample Data
+
+# final_xxx files become the fake observed (survey) dataset
+
+# use a different base seed so fake observed trips have different behavior from model
+rng_base_seed: 1
+
+# initialize.py has switch to write sampled raw data
+write_raw_tables: True
+
+python simulation.py -c configs_survey_100 -c ../example/configs -o output_survey_100
+
+# copy canonical data files to data folder (example_estimation/output_survey_100/raw_tables -> example_estimation/data)
+
+
+############
+
+  #- initialize_landuse
+  #- compute_accessibility
+  #- initialize_households
+  - school_location
+        persons.school_taz (shadow pricing?)
+  - workplace_location
+        persons.workplace_taz
+  - auto_ownership_simulate
+        households['auto_ownership'] = choices cars0,cars1,cars2,cars3,cars4
+  - free_parking
+        persons['free_parking_at_work'] = True,False
+  - cdap_simulate
+        persons['cdap_activity'] = N,M,H
+        persons['cdap_rank'] = 1,2,3,4,5,6,...
+  - mandatory_tour_frequency
+          persons.mandatory_tour_frequency  = work1,work2,school1,school2,work_and_school
+          creates mandatory_tours
+  - mandatory_tour_scheduling
+        tdd_choices, timetable = vts.vectorize_tour_scheduling
+            tours.start
+            tours.end
+            tours.duration
+            tours.tdd
+        timetable
+  - joint_tour_frequency
+  - joint_tour_composition
+  - joint_tour_participation
+  - joint_tour_destination
+  - joint_tour_scheduling
+  - non_mandatory_tour_frequency
+  - non_mandatory_tour_destination
+  - non_mandatory_tour_scheduling
+  - tour_mode_choice_simulate
+        primary_tours['tour_mode'] = choices
+  - atwork_subtour_frequency
+        tours['atwork_subtour_frequency'] = no_subtours,eat,business1,maint,business2,eat_business
+        # creates subtours
+  - atwork_subtour_destination
+  - atwork_subtour_scheduling
+  - atwork_subtour_mode_choice
+  - stop_frequency
+  - trip_purpose
+  - trip_destination
+  - trip_purpose_and_destination
+  - trip_scheduling
+  - trip_mode_choice
+  - write_data_dictionary
+  - track_skim_usage
+  - write_tables

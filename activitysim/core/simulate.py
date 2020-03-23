@@ -25,7 +25,6 @@ from . import config
 from . import util
 from . import assign
 from . import chunk
-from . import mem
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +63,7 @@ def read_model_alts(file_path, set_index=None):
     return df
 
 
-def read_model_spec(model_settings=None, file_name=None, spec_dir=None,
+def read_model_spec(model_settings=None, file_name=None,
                     description_name="Description",
                     expression_name="Expression"):
     """
@@ -111,10 +110,7 @@ def read_model_spec(model_settings=None, file_name=None, spec_dir=None,
         if not file_name.lower().endswith('.csv'):
             file_name = '%s.csv' % (file_name,)
 
-    if spec_dir is not None:
-        file_path = os.path.join(spec_dir, file_name)
-    else:
-        file_path = config.config_file_path(file_name)
+    file_path = config.config_file_path(file_name)
 
     spec = pd.read_csv(file_path, comment='#')
 
@@ -139,7 +135,79 @@ def read_model_spec(model_settings=None, file_name=None, spec_dir=None,
     return spec
 
 
-def eval_utilities(spec, choosers, locals_d=None, trace_label=None, have_trace_targets=False):
+def read_model_coeffecients(model_settings):
+    """
+    Read CSV model coefficients into a Pandas DataFrame
+
+    file_path : str   absolute or relative path to file
+
+    The CSV is expected to have columns for component descriptions
+    and expressions, plus one or more alternatives.
+
+    The CSV is required to have a header with column names. For example:
+
+        coefficient_name,alt0,alt1,alt2
+
+    Parameters
+    ----------
+    model_settings : dict
+        name of spec_file is in model_settings['SPEC'] and file is relative to configs
+
+    Returns
+    -------
+    coefficients : pandas.DataFrame
+
+    """
+
+    if 'COEFFS' not in model_settings:
+        print(model_settings)
+    assert 'COEFFS' in model_settings, "'COEFFS' not in model_settings in %s" % model_settings.get('source_file_path')
+    coeffs_file_name = model_settings['COEFFS']
+
+    file_path = config.config_file_path(coeffs_file_name)
+    coefficients =  pd.read_csv(file_path, comment='#', index_col='coefficient_name')
+
+    return coefficients
+
+
+def get_segment_coefficients(model_settings, segment_name):
+    omnibus_coefficients = read_model_coeffecients(model_settings)
+    coefficients = {k: v for k, v in omnibus_coefficients[segment_name].items()}
+    return coefficients
+
+
+def eval_coefficients(spec, coefficients):
+
+    spec = spec.copy() # don't clobber input spec
+
+    for c in spec.columns:
+        spec[c] = spec[c].apply(lambda x: eval(str(x), {}, coefficients))
+
+    return spec
+
+
+def eval_utilities(spec, choosers, locals_d=None, trace_label=None, have_trace_targets=False, estimation_hook=None):
+    """
+
+    Parameters
+    ----------
+    spec : pandas.DataFrame
+        A table of variable specifications and coefficient values.
+        Variable expressions should be in the table index and the table
+        should have a column for each alternative.
+    choosers : pandas.DataFrame
+    locals_d : Dict or None
+        This is a dictionary of local variables that will be the environment
+        for an evaluation of an expression that begins with @
+    trace_label
+    have_trace_targets
+    estimation_hook : function(df, label, table_name)
+        hook called to report intermediate table results (used for estimation)
+
+    Returns
+    -------
+
+    """
 
     # fixme - restore tracing and _check_for_variability
 
@@ -182,9 +250,18 @@ def eval_utilities(spec, choosers, locals_d=None, trace_label=None, have_trace_t
             logger.exception("Variable evaluation failed for: %s" % str(expr))
             raise err
 
+    if estimation_hook is not None:
+        df = pd.DataFrame(data=expression_values.transpose(), index=choosers.index, columns=spec.index)
+        df.index.name = choosers.index.name
+        estimation_hook(df, 'expression_values')
+
     # - compute_utilities
     utilities = np.dot(expression_values.transpose(), spec.astype(np.float64).values)
     utilities = pd.DataFrame(data=utilities, index=choosers.index, columns=spec.columns)
+
+    # print(utilities)
+    # print(spec)
+    # bug
 
     t0 = tracing.print_elapsed_time(" eval_utilities", t0)
 
@@ -210,6 +287,20 @@ def eval_utilities(spec, choosers, locals_d=None, trace_label=None, have_trace_t
                          slicer=None, transpose=False,
                          column_labels=column_labels,
                          index_label='expression')
+
+        # excruciating level of detail for debugging problems with coefficients
+        # for id in trace_df.columns:
+        #     df = spec.copy()
+        #     for c in df.columns:
+        #         df[c] = df[c] * trace_df[id]
+        #
+        #     row_sums = df.sum(axis=1)
+        #     tracing.trace_df(row_sums, '%s.%s.utility_row_sums' % (trace_label, id),
+        #                      slicer=None, transpose=False)
+        #
+        #     df.insert(0, id, trace_df[id])
+        #     tracing.trace_df(df, '%s.%s.expression_values' % (trace_label, id),
+        #                      slicer=None, transpose=False)
 
     return utilities
 
@@ -512,7 +603,7 @@ def compute_base_probabilities(nested_probabilities, nests, spec):
     return base_probabilities
 
 
-def eval_mnl(choosers, spec, locals_d, custom_chooser,
+def eval_mnl(choosers, spec, locals_d, custom_chooser, estimation_hook,
              trace_label=None, trace_choice_name=None):
     """
     Run a simulation for when the model spec does not involve alternative
@@ -539,6 +630,8 @@ def eval_mnl(choosers, spec, locals_d, custom_chooser,
         for an evaluation of an expression that begins with @
     custom_chooser : function(probs, choosers, spec, trace_label) returns choices, rands
         custom alternative to logit.make_choices
+    estimation_hook : function(df, label, table_name)
+        hook called to report intermediate table results (used for estimation)
     trace_label: str
         This is the label to be used  for trace log file entries and dump file names
         when household tracing enabled. No tracing occurs if label is empty or None.
@@ -558,8 +651,11 @@ def eval_mnl(choosers, spec, locals_d, custom_chooser,
     if have_trace_targets:
         tracing.trace_df(choosers, '%s.choosers' % trace_label)
 
-    utilities = eval_utilities(spec, choosers, locals_d, trace_label, have_trace_targets)
+    utilities = eval_utilities(spec, choosers, locals_d, trace_label, have_trace_targets, estimation_hook)
     chunk.log_df(trace_label, "utilities", utilities)
+
+    if estimation_hook:
+        estimation_hook(utilities, 'utilities')
 
     if have_trace_targets:
         tracing.trace_df(utilities, '%s.utilities' % trace_label,
@@ -594,7 +690,7 @@ def eval_mnl(choosers, spec, locals_d, custom_chooser,
     return choices
 
 
-def eval_nl(choosers, spec, nest_spec, locals_d, custom_chooser,
+def eval_nl(choosers, spec, nest_spec, locals_d, custom_chooser, estimation_hook,
             trace_label=None, trace_choice_name=None):
     """
     Run a nested-logit simulation for when the model spec does not involve alternative
@@ -616,6 +712,8 @@ def eval_nl(choosers, spec, nest_spec, locals_d, custom_chooser,
         for an evaluation of an expression that begins with @
     custom_chooser : function(probs, choosers, spec, trace_label) returns choices, rands
         custom alternative to logit.make_choices
+    estimation_hook : function(df, label, table_name)
+        hook called to report intermediate table results (used for estimation)
     trace_label: str
         This is the label to be used  for trace log file entries and dump file names
         when household tracing enabled. No tracing occurs if label is empty or None.
@@ -636,8 +734,11 @@ def eval_nl(choosers, spec, nest_spec, locals_d, custom_chooser,
     if have_trace_targets:
         tracing.trace_df(choosers, '%s.choosers' % trace_label)
 
-    raw_utilities = eval_utilities(spec, choosers, locals_d, trace_label, have_trace_targets)
+    raw_utilities = eval_utilities(spec, choosers, locals_d, trace_label, have_trace_targets, estimation_hook)
     chunk.log_df(trace_label, "raw_utilities", raw_utilities)
+
+    if estimation_hook:
+        estimation_hook(raw_utilities, 'raw_utilities')
 
     if have_trace_targets:
         tracing.trace_df(raw_utilities, '%s.raw_utilities' % trace_label,
@@ -711,7 +812,7 @@ def eval_nl(choosers, spec, nest_spec, locals_d, custom_chooser,
 
 
 def _simple_simulate(choosers, spec, nest_spec, skims=None, locals_d=None,
-                     custom_chooser=None,
+                     custom_chooser=None, estimation_hook=None,
                      trace_label=None, trace_choice_name=None,
                      ):
     """
@@ -741,6 +842,8 @@ def _simple_simulate(choosers, spec, nest_spec, skims=None, locals_d=None,
         This is a dictionary of local variables that will be the environment
         for an evaluation of an expression that begins with @
     custom_chooser : function(probs, choosers, spec, trace_label) returns choices, rands
+    estimation_hook : function(df, label, table_name)
+        hook called to report intermediate table results (used for estimation)
 
     trace_label: str
         This is the label to be used  for trace log file entries and dump file names
@@ -759,10 +862,10 @@ def _simple_simulate(choosers, spec, nest_spec, skims=None, locals_d=None,
         set_skim_wrapper_targets(choosers, skims)
 
     if nest_spec is None:
-        choices = eval_mnl(choosers, spec, locals_d, custom_chooser,
+        choices = eval_mnl(choosers, spec, locals_d, custom_chooser, estimation_hook,
                            trace_label=trace_label, trace_choice_name=trace_choice_name)
     else:
-        choices = eval_nl(choosers, spec, nest_spec, locals_d,  custom_chooser,
+        choices = eval_nl(choosers, spec, nest_spec, locals_d,  custom_chooser, estimation_hook,
                           trace_label=trace_label, trace_choice_name=trace_choice_name)
 
     return choices
@@ -805,7 +908,7 @@ def simple_simulate_rpc(chunk_size, choosers, spec, nest_spec, trace_label):
 
 
 def simple_simulate(choosers, spec, nest_spec, skims=None, locals_d=None,
-                    chunk_size=0, custom_chooser=None,
+                    chunk_size=0, custom_chooser=None, estimation_hook=None,
                     trace_label=None, trace_choice_name=None):
     """
     Run an MNL or NL simulation for when the model spec does not involve alternative
@@ -835,6 +938,7 @@ def simple_simulate(choosers, spec, nest_spec, skims=None, locals_d=None,
             chooser_chunk, spec, nest_spec,
             skims, locals_d,
             custom_chooser,
+            estimation_hook,
             chunk_trace_label,
             trace_choice_name)
 

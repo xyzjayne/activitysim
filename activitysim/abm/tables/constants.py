@@ -67,9 +67,9 @@ CDAP_ACTIVITY_NONMANDATORY = 'N'
 CDAP_ACTIVITY_HOME = 'H'
 
 # for use in string expressions (e.g. so we can change from a string to an int)
-CDAP_ACTIVITY_MANDATORY_Q = "'M'"
-CDAP_ACTIVITY_NONMANDATORY_Q = "'N'"
-CDAP_ACTIVITY_HOME_Q = "'H'"
+# CDAP_ACTIVITY_MANDATORY_Q = "'M'"
+# CDAP_ACTIVITY_NONMANDATORY_Q = "'N'"
+# CDAP_ACTIVITY_HOME_Q = "'H'"
 
 # joint tour types
 # shopping,othmaint,eatout,social,othdiscr

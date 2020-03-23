@@ -13,11 +13,12 @@ from activitysim.core import tracing
 from activitysim.core import config
 from activitysim.core import inject
 from activitysim.core import pipeline
+from activitysim.core import simulate
 from activitysim.core.mem import force_garbage_collect
 from activitysim.core.util import assign_in_place
 
-from .util.mode import tour_mode_choice_spec
 from .util.mode import run_tour_mode_choice_simulate
+from .util import estimation
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +38,7 @@ def tour_mode_choice_simulate(tours, persons_merged,
     """
     trace_label = 'tour_mode_choice'
     model_settings = config.read_model_settings('tour_mode_choice.yaml')
-
-    spec = tour_mode_choice_spec(model_settings)
+    spec = simulate.read_model_spec(model_settings=model_settings)
 
     primary_tours = tours.to_frame()
 
@@ -78,6 +78,16 @@ def tour_mode_choice_simulate(tours, persons_merged,
         'in_time_col_name': in_time_col_name
     }
 
+    if estimation.estimating('tour_mode_choice'):
+        estimation.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
+        estimation.write_spec(model_settings)
+        estimation.write_model_settings(model_settings, 'tour_mode_choice.yaml')
+        # FIXME these are less readable, but behave correctly in case of inherited settings
+        #estimation.write_nest_spec(nest_spec)
+        #estimation.write_constants(constants)
+
+        # FIXME run_tour_mode_choice_simulate writes choosers post-annotation
+
     choices_list = []
     for tour_type, segment in primary_tours_merged.groupby('tour_type'):
 
@@ -107,6 +117,9 @@ def tour_mode_choice_simulate(tours, persons_merged,
 
     choices = pd.concat(choices_list)
 
+    if estimation.estimating():
+        estimation.write_choices(choices)
+
     tracing.print_summary('tour_mode_choice_simulate all tour type choices',
                           choices, value_counts=True)
 
@@ -127,3 +140,8 @@ def tour_mode_choice_simulate(tours, persons_merged,
                          slicer='tour_id',
                          index_label='tour_id',
                          warn_if_empty=True)
+
+    if estimation.estimating():
+        estimation.end_estimation()
+
+

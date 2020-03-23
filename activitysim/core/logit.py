@@ -39,7 +39,7 @@ def report_bad_choices(bad_row_map, df, trace_label, msg, trace_choosers=None, r
     MAX_DUMP = 1000
     MAX_PRINT = 10
 
-    msg_with_count = "%s %s for %s rows" % (trace_label, msg, bad_row_map.sum())
+    msg_with_count = "%s %s for %s of %s rows" % (trace_label, msg, bad_row_map.sum(), len(df))
     logger.warning(msg_with_count)
 
     df = df[bad_row_map]

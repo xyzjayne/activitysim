@@ -183,15 +183,15 @@ def non_mandatory_tour_frequency(persons, persons_merged,
     # segment by person type and pick the right spec for each person type
     for ptype, segment in choosers.groupby('ptype'):
 
-        name = PTYPE_NAME[ptype]
+        segment_name = PTYPE_NAME[ptype]
 
         # pick the spec column for the segment
-        spec = model_spec[[name]]
+        spec = model_spec[[segment_name]]
 
         # drop any zero-valued rows
-        spec = spec[spec[name] != 0]
+        spec = spec[spec[segment_name] != 0]
 
-        logger.info("Running segment '%s' of size %d", name, len(segment))
+        logger.info("Running segment '%s' of size %d", segment_name, len(segment))
 
         choices = interaction_simulate(
             segment,
@@ -199,7 +199,7 @@ def non_mandatory_tour_frequency(persons, persons_merged,
             spec=spec,
             locals_d=constants,
             chunk_size=chunk_size,
-            trace_label='non_mandatory_tour_frequency.%s' % name,
+            trace_label='non_mandatory_tour_frequency.%s' % segment_name,
             trace_choice_name='non_mandatory_tour_frequency')
 
         choices_list.append(choices)

@@ -30,15 +30,6 @@ from . import mode
 logger = logging.getLogger(__name__)
 
 
-def get_logsum_spec(model_settings):
-
-    return mode.tour_mode_choice_spec(model_settings)
-
-
-def get_coeffecients_spec(model_settings):
-    return mode.tour_mode_choice_coeffecients_spec(model_settings)
-
-
 def _compute_logsums(alt_tdd, tours_merged, tour_purpose, model_settings, trace_label):
     """
     compute logsums for tours using skims for alt_tdd out_period and in_period
@@ -77,12 +68,8 @@ def _compute_logsums(alt_tdd, tours_merged, tour_purpose, model_settings, trace_
     # - locals_dict
     constants = config.get_model_constants(logsum_settings)
 
-    omnibus_coefficient_spec = get_coeffecients_spec(logsum_settings)
-    coefficient_spec = omnibus_coefficient_spec[tour_purpose]
-    coefficients = assign.evaluate_constants(coefficient_spec, constants=constants)
-
     locals_dict = {}
-    locals_dict.update(coefficients)
+    #locals_dict.update(coefficients)
     locals_dict.update(constants)
     locals_dict.update(skims)
 
@@ -102,7 +89,11 @@ def _compute_logsums(alt_tdd, tours_merged, tour_purpose, model_settings, trace_
             trace_label=trace_label)
 
     # - compute logsums
-    logsum_spec = get_logsum_spec(logsum_settings)
+
+    coefficients = simulate.get_segment_coefficients(logsum_settings, tour_purpose)
+    logsum_spec = simulate.read_model_spec(logsum_settings)
+    logsum_spec = simulate.eval_coefficients(logsum_spec, coefficients)
+
     nest_spec = config.get_logit_model_settings(logsum_settings)
 
     logsums = simulate.simple_simulate_logsums(

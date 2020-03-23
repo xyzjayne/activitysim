@@ -1,37 +1,36 @@
-Expression,eatout,escort,othdiscr,othmaint,school,shopping,social,univ,work,atwork
+coefficient_name,eatout,escort,othdiscr,othmaint,school,shopping,social,univ,work,atwork
 c_ivt,-0.0175,-0.0175,-0.0175,-0.0175,-0.0224,-0.0175,-0.0175,-0.0224,-0.0134,-0.0188
-c_ivt_lrt,0.90 * c_ivt,0.90 * c_ivt,0.90 * c_ivt,0.90 * c_ivt,0.90 * c_ivt,0.90 * c_ivt,0.90 * c_ivt,0.90 * c_ivt,0.90 * c_ivt,-0.01692
-c_ivt_ferry,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,-0.01504
-c_ivt_exp,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,-0.0188
-c_ivt_hvy,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,0.80 * c_ivt,-0.01504
-c_ivt_com,0.70 * c_ivt,0.70 * c_ivt,0.70 * c_ivt,0.70 * c_ivt,0.70 * c_ivt,0.70 * c_ivt,0.70 * c_ivt,0.70 * c_ivt,0.70 * c_ivt,-0.01316
-c_walktimeshort,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,-0.0376
-c_walktimelong,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,-0.188
-c_biketimeshort,4.00 * c_ivt,4.00 * c_ivt,4.00 * c_ivt,4.00 * c_ivt,4.00 * c_ivt,4.00 * c_ivt,4.00 * c_ivt,4.00 * c_ivt,4.00 * c_ivt,-0.0752
-c_biketimelong,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,-0.376
-#value_of_time is a person attribute so we cant compute c_cost as scalar here,,,,,,,,,,
-#c_cost,(0.60 * c_ivt) / valueOfTime,(0.60 * c_ivt) / valueOfTime,(0.60 * c_ivt) / valueOfTime,(0.60 * c_ivt) / valueOfTime,(0.60 * c_ivt) / valueOfTime,(0.60 * c_ivt) / valueOfTime,(0.60 * c_ivt) / valueOfTime,(0.60 * c_ivt) / valueOfTime,(0.60 * c_ivt) / valueOfTime,(0.6*c_ivt) / valueOfTime
-c_short_i_wait,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,-0.0376
-c_long_i_wait,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,1.00 * c_ivt,-0.0188
-c_wacc,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,-0.0376
-c_wegr,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,-0.0376
-c_waux,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,-0.0376
-c_dtim,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,-0.0376
-c_xwait,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,2.00 * c_ivt,-0.0376
+c_ivt_cost_multiplier,0.60,0.60,0.60,0.60,0.60,0.60,0.60,0.60,0.60,0.60
+c_ivt_lrt_multiplier,0.90,0.90,0.90,0.90,0.90,0.90,0.90,0.90,0.90,-0.01692
+c_ivt_ferry_multiplier,0.80,0.80,0.80,0.80,0.80,0.80,0.80,0.80,0.80,-0.01504
+c_ivt_exp_multiplier,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,-0.0188
+c_ivt_hvy_multiplier,0.80,0.80,0.80,0.80,0.80,0.80,0.80,0.80,0.80,-0.01504
+c_ivt_com_multiplier,0.70,0.70,0.70,0.70,0.70,0.70,0.70,0.70,0.70,-0.01316
+c_walktimeshort_multiplier,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,-0.0376
+c_walktimelong_multiplier,10.00,10.00,10.00,10.00,10.00,10.00,10.00,10.00,10.00,-0.188
+c_biketimeshort_multiplier,4.00,4.00,4.00,4.00,4.00,4.00,4.00,4.00,4.00,-0.0752
+c_biketimelong_multiplier,20.00,20.00,20.00,20.00,20.00,20.00,20.00,20.00,20.00,-0.376
+c_short_i_wait_multiplier,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,-0.0376
+c_long_i_wait_multiplier,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,1.00,-0.0188
+c_wacc_multiplier,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,-0.0376
+c_wegr_multiplier,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,-0.0376
+c_waux_multiplier,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,-0.0376
+c_dtim_multiplier,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,-0.0376
+c_xwait_multiplier,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,2.00,-0.0376
 c_dacc_ratio,0,0,0,0,0,0,0,0,0,0
-c_xfers_wlk,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,10.00 * c_ivt,-0.188
-c_xfers_drv,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,-0.376
-c_drvtrn_distpen_0,270.00 * c_ivt,270.00 * c_ivt,270.00 * c_ivt,270.00 * c_ivt,270.00 * c_ivt,270.00 * c_ivt,270.00 * c_ivt,270.00 * c_ivt,270.00 * c_ivt,-5.076
+c_xfers_wlk_multiplier,10.00,10.00,10.00,10.00,10.00,10.00,10.00,10.00,10.00,-0.188
+c_xfers_drv_multiplier,20.00,20.00,20.00,20.00,20.00,20.00,20.00,20.00,20.00,-0.376
+c_drvtrn_distpen_0_multiplier,270.00,270.00,270.00,270.00,270.00,270.00,270.00,270.00,270.00,-5.076
 c_drvtrn_distpen_max,15,15,15,15,15,15,15,15,15,15
-c_topology_walk,15.00 * c_ivt,15.00 * c_ivt,15.00 * c_ivt,15.00 * c_ivt,15.00 * c_ivt,15.00 * c_ivt,15.00 * c_ivt,15.00 * c_ivt,15.00 * c_ivt,-0.141
-c_topology_bike,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,20.00 * c_ivt,-0.188
-c_topology_trn,2.20 * c_ivt,2.20 * c_ivt,2.20 * c_ivt,2.20 * c_ivt,2.20 * c_ivt,2.20 * c_ivt,2.20 * c_ivt,2.20 * c_ivt,2.20 * c_ivt,-0.0376
+c_topology_walk_multiplier,15.00,15.00,15.00,15.00,15.00,15.00,15.00,15.00,15.00,-0.141
+c_topology_bike_multiplier,20.00,20.00,20.00,20.00,20.00,20.00,20.00,20.00,20.00,-0.188
+c_topology_trn_multiplier,2.20,2.20,2.20,2.20,2.20,2.20,2.20,2.20,2.20,-0.0376
 c_density_index,0,0,0,0,0,0,0,0,0,0.00376
-c_age1619_da,0,0,0,0,61.66517857 * c_ivt,0,0,61.66517857 * c_ivt,0,-0.172
-c_age010_trn,0,0,0,0,69.41071429 * c_ivt,0,0,69.41071429 * c_ivt,0,-0.0384
-c_age16p_sr,78.05714286 * c_ivt,78.05714286 * c_ivt,78.05714286 * c_ivt,78.05714286 * c_ivt,0,78.05714286 * c_ivt,78.05714286 * c_ivt,0,0,0
-c_hhsize1_sr,0,0,0,0,0,0,0,0,54.82 * c_ivt,0
-c_hhsize2_sr,0,0,0,0,28.38839286 * c_ivt,0,0,28.38839286 * c_ivt,0,0
+c_age1619_da_multiplier,0,0,0,0,61.66517857,0,0,61.66517857,0,-0.172
+c_age010_trn_multiplier,0,0,0,0,69.41071429,0,0,69.41071429,0,-0.0384
+c_age16p_sr_multiplier,78.05714286,78.05714286,78.05714286,78.05714286,0,78.05714286,78.05714286,0,0,0
+c_hhsize1_sr_multiplier,0,0,0,0,0,0,0,0,54.82,0
+c_hhsize2_sr_multiplier,0,0,0,0,28.38839286,0,0,28.38839286,0,0
 #indiv tour ASCs,,,,,,,,,,
 walk_ASC_no_auto,5.125117111,2.801206737,3.266594735,1.28729901,18.41455742,2.376877423,1.868091482,6.408966934,5.767215561,6.669212684
 walk_ASC_auto_deficient,3.274605133,-0.902046556,2.249407533,1.369040422,3.257362412,2.270173198,2.870183935,4.505909886,2.401041643,0.925460911

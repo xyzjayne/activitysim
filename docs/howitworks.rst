@@ -438,7 +438,7 @@ to :ref:`shadow_pricing` for more information.
    # in iterate_location_choice() in location_choice.py
 	 for iteration in range(1, max_iterations + 1):
 
-        if spc.use_shadow_pricing and iteration > 1:
+        if shadow_pricing.use_shadow_pricing() and iteration > 1:
             spc.update_shadow_prices()
 
         choices = run_location_choice(
@@ -458,13 +458,13 @@ to :ref:`shadow_pricing` for more information.
         if locutor:
             spc.write_trace_files(iteration)
 
-        if spc.use_shadow_pricing and spc.check_fit(iteration):
+        if shadow_pricing.use_shadow_pricing() and spc.check_fit(iteration):
             logging.info("%s converged after iteration %s" % (trace_label, iteration,))
             break
 
     # - shadow price table
     if locutor:
-        if spc.use_shadow_pricing and 'SHADOW_PRICE_TABLE' in model_settings:
+        if shadow_pricing.use_shadow_pricing() and 'SHADOW_PRICE_TABLE' in model_settings:
             inject.add_table(model_settings['SHADOW_PRICE_TABLE'], spc.shadow_prices)
         if 'MODELED_SIZE_TABLE' in model_settings:
             inject.add_table(model_settings['MODELED_SIZE_TABLE'], spc.modeled_size)

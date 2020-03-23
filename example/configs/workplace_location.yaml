@@ -60,4 +60,4 @@ MODELED_SIZE_TABLE: workplace_modeled_size
 # not loaded if commented out
 SAVED_SHADOW_PRICE_TABLE_NAME: workplace_shadow_prices.csv
 
-
+COEFFS: workplace_location_coeffs.csv

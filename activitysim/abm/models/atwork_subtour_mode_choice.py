@@ -13,12 +13,13 @@ from activitysim.core import tracing
 from activitysim.core import config
 from activitysim.core import inject
 from activitysim.core import pipeline
+from activitysim.core import simulate
+
 from activitysim.core.mem import force_garbage_collect
 
 from activitysim.core.util import assign_in_place
 
 from .util.mode import run_tour_mode_choice_simulate
-from .util.mode import tour_mode_choice_spec
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +39,7 @@ def atwork_subtour_mode_choice(
 
     model_settings = config.read_model_settings('tour_mode_choice.yaml')
 
-    spec = tour_mode_choice_spec(model_settings)
+    spec = simulate.read_model_spec(model_settings=model_settings)
 
     tours = tours.to_frame()
     subtours = tours[tours.tour_category == 'atwork']
