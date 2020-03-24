@@ -78,13 +78,13 @@ def tour_mode_choice_simulate(tours, persons_merged,
         'in_time_col_name': in_time_col_name
     }
 
-    if estimation.estimating('tour_mode_choice'):
-        estimation.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
-        estimation.write_spec(model_settings)
-        estimation.write_model_settings(model_settings, 'tour_mode_choice.yaml')
+    if estimation.manager.begin_estimation('tour_mode_choice'):
+        estimation.manager.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
+        estimation.manager.write_spec(model_settings)
+        estimation.manager.write_model_settings(model_settings, 'tour_mode_choice.yaml')
         # FIXME these are less readable, but behave correctly in case of inherited settings
-        #estimation.write_nest_spec(nest_spec)
-        #estimation.write_constants(constants)
+        #estimation.manager.write_nest_spec(nest_spec)
+        #estimation.manager.write_constants(constants)
 
         # FIXME run_tour_mode_choice_simulate writes choosers post-annotation
 
@@ -117,8 +117,8 @@ def tour_mode_choice_simulate(tours, persons_merged,
 
     choices = pd.concat(choices_list)
 
-    if estimation.estimating():
-        estimation.write_choices(choices)
+    if estimation.manager.estimating:
+        estimation.manager.write_choices(choices)
 
     tracing.print_summary('tour_mode_choice_simulate all tour type choices',
                           choices, value_counts=True)
@@ -141,7 +141,7 @@ def tour_mode_choice_simulate(tours, persons_merged,
                          index_label='tour_id',
                          warn_if_empty=True)
 
-    if estimation.estimating():
-        estimation.end_estimation()
+    if estimation.manager.estimating:
+        estimation.manager.end_estimation()
 
 

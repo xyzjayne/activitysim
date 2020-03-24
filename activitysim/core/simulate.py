@@ -161,7 +161,9 @@ def read_model_coeffecients(model_settings):
 
     if 'COEFFS' not in model_settings:
         print(model_settings)
-    assert 'COEFFS' in model_settings, "'COEFFS' not in model_settings in %s" % model_settings.get('source_file_path')
+    assert 'COEFFS' in model_settings, \
+        "'COEFFS' not in model_settings in %s" % model_settings.get('source_file_paths')
+
     coeffs_file_name = model_settings['COEFFS']
 
     file_path = config.config_file_path(coeffs_file_name)

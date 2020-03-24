@@ -1,11 +1,11 @@
 # ActivitySim
 # See full license in LICENSE.txt.
 
-from __future__ import (absolute_import, division, print_function, )
-from future.standard_library import install_aliases
-install_aliases()  # noqa: E402
-
-from future.utils import iteritems
+# from __future__ import (absolute_import, division, print_function, )
+# from future.standard_library import install_aliases
+# install_aliases()  # noqa: E402
+#
+# from future.utils import iteritems
 
 import logging
 
@@ -89,15 +89,16 @@ def write_estimation_specs(model_settings, settings_file):
     model_settings
     settings_file
     """
-    estimation.write_model_settings(model_settings, settings_file)
-    estimation.write_spec(model_settings, tag='SAMPLE_SPEC')
-    estimation.write_spec(model_settings, tag='SPEC')
-    estimation.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
+    assert estimation.manager.estimating
+    estimation.manager.write_model_settings(model_settings, settings_file)
+    estimation.manager.write_spec(model_settings, tag='SAMPLE_SPEC')
+    estimation.manager.write_spec(model_settings, tag='SPEC')
+    estimation.manager.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
 
-    estimation.copy_model_settings('shadow_pricing.yaml', tag='shadow_pricing')
+    estimation.manager.copy_model_settings('shadow_pricing.yaml', tag='shadow_pricing')
 
-    estimation.write_table(inject.get_injectable('size_terms'), 'size_terms', index=True, append=False)
-    estimation.write_table(inject.get_table('land_use').to_frame(), 'landuse', index=True, append=False)
+    estimation.manager.write_table(inject.get_injectable('size_terms'), 'size_terms', index=True, append=False)
+    estimation.manager.write_table(inject.get_table('land_use').to_frame(), 'landuse', index=True, append=False)
 
 
 def spec_for_segment(model_settings, spec_id, segment_name):
@@ -167,7 +168,7 @@ def run_location_sample(
 
     logger.info("Running %s with %d persons" % (trace_label, len(choosers.index)))
 
-    if estimation.estimating():
+    if estimation.manager.estimating:
 
         # FIXME return full alternative set rather than sample
         #bug remove if not used...
@@ -331,10 +332,10 @@ def run_location_simulate(
     if constants is not None:
         locals_d.update(constants)
 
-    if estimation.estimating():
+    if estimation.manager.estimating:
         # write choosers after annotation
-        estimation.write_choosers(choosers)
-        estimation.write_alternatives(alternatives)
+        estimation.manager.write_choosers(choosers)
+        estimation.manager.write_alternatives(alternatives)
         estimation_hook = estimation.write_hook
     else:
         estimation_hook = None
@@ -355,8 +356,8 @@ def run_location_simulate(
         trace_choice_name=model_settings['DEST_CHOICE_COLUMN_NAME'],
         estimation_hook=estimation_hook)
 
-    if estimation.estimating():
-        estimation.write_choices(choices)
+    if estimation.manager.estimating:
+        estimation.manager.write_choices(choices)
 
     return choices
 
@@ -398,7 +399,7 @@ def run_location_choice(
     segment_ids = model_settings['SEGMENT_IDS']
 
     choices_list = []
-    for segment_name, segment_id in iteritems(segment_ids):
+    for segment_name, segment_id in segment_ids.items():
 
         choosers = persons_merged_df[persons_merged_df[chooser_segment_column] == segment_id]
 
@@ -444,8 +445,10 @@ def run_location_choice(
                 chunk_size,
                 tracing.extend_trace_label(trace_label, 'simulate.%s' % segment_name))
 
-        if estimation.estimating():
-            estimation.write_choices(choices)
+        if estimation.manager.estimating:
+            estimation.manager.write_choices(choices)
+
+            choices = estimation.manager.get_override_choices(choices)
 
         choices_list.append(choices)
 
@@ -592,7 +595,7 @@ def workplace_location(
     trace_label = 'workplace_location'
     model_settings = config.read_model_settings('workplace_location.yaml')
 
-    if estimation.estimating('workplace_location'):
+    if estimation.manager.begin_estimation('workplace_location'):
         assert not shadow_pricing.use_shadow_pricing()
         write_estimation_specs(model_settings, 'workplace_location.yaml')
 
@@ -603,8 +606,8 @@ def workplace_location(
         chunk_size, trace_hh_id, locutor, trace_label
     )
 
-    if estimation.estimating():
-        estimation.end_estimation()
+    if estimation.manager.estimating:
+        estimation.manager.end_estimation()
 
 
 @inject.step()
@@ -622,7 +625,7 @@ def school_location(
     trace_label = 'school_location'
     model_settings = config.read_model_settings('school_location.yaml')
 
-    if estimation.estimating('school_location'):
+    if estimation.manager.begin_estimation('school_location'):
         assert not shadow_pricing.use_shadow_pricing()
         write_estimation_specs(model_settings, 'school_location.yaml')
 
@@ -633,6 +636,6 @@ def school_location(
         chunk_size, trace_hh_id, locutor, trace_label
     )
 
-    if estimation.estimating():
-        estimation.end_estimation()
+    if estimation.manager.estimating:
+        estimation.manager.end_estimation()
 

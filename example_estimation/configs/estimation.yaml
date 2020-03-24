@@ -1,0 +1,16 @@
+
+
+# model default is None
+#model: school_location
+model: workplace_location
+#model: auto_ownership
+#model: tour_mode_choice
+
+
+school_location:
+  file_name: estimation_choices/final_persons.csv
+  column_name: school_taz
+
+workplace_location:
+  file_name: estimation_choices/final_persons.csv
+  column_name: workplace_taz

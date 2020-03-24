@@ -181,8 +181,6 @@ def read_model_settings(file_name, mandatory=False):
 
     model_settings = read_settings_file(file_name, mandatory=mandatory)
 
-    model_settings['source_file_path'] = file_name
-
     return model_settings
 
 
@@ -346,7 +344,12 @@ def read_settings_file(file_name, mandatory=True):
 
             with open(file_path) as f:
                 s = yaml.load(f, Loader=yaml.SafeLoader)
+                if s is None:
+                    s = {}
+
             settings = backfill_settings(settings, s)
+
+            settings['source_file_paths'] = settings.get('source_file_path', []) + [file_path]
 
             if s.get('inherit_settings', False):
                 logger.debug("inherit_settings flag set for %s in %s" % (file_name, file_path))
@@ -359,6 +362,38 @@ def read_settings_file(file_name, mandatory=True):
                            (file_name, configs_dir))
 
     return settings
+
+
+def base_settings_file_path(file_name):
+    """
+
+    FIXME - should be in configs
+
+    Parameters
+    ----------
+    file_name
+
+    Returns
+    -------
+        path to base settings file or None if not found
+    """
+
+    if not file_name.lower().endswith('.yaml'):
+        file_name = '%s.yaml' % (file_name, )
+
+    configs_dir = inject.get_injectable('configs_dir')
+
+    if isinstance(configs_dir, str):
+        configs_dir = [configs_dir]
+
+    assert isinstance(configs_dir, list)
+
+    for dir in configs_dir:
+        file_path = os.path.join(dir, file_name)
+        if os.path.exists(file_path):
+            return file_path
+
+    raise RuntimeError("base_settings_file %s not found" % file_name)
 
 
 def filter_warnings():

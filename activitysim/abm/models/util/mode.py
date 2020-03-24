@@ -50,9 +50,9 @@ def run_tour_mode_choice_simulate(
         choosers, locals_dict, skims,
         model_settings, trace_label)
 
-    if estimation.estimating():
+    if estimation.manager.estimating:
         # write choosers after annotation
-        estimation.write_choosers(choosers)
+        estimation.manager.write_choosers(choosers)
         estimation_hook = estimation.write_hook
     else:
         estimation_hook = None

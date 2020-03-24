@@ -1,10 +1,7 @@
 
 inherit_settings: True
 
-# model_estimation default is None
-#model_estimation: school_location
-model_estimation: workplace_location
-#model_estimation: tour_mode_choice
+
 rng_base_seed: 0
 
 use_shadow_pricing: False
