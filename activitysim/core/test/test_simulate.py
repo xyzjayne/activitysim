@@ -43,11 +43,10 @@ def test_read_model_spec(data_dir, spec_name):
 
     spec = simulate.read_model_spec(
         file_name=spec_name,
-        spec_dir=data_dir,
-        description_name='description', expression_name='expression')
+        spec_dir=data_dir)
 
     assert len(spec) == 4
-    assert spec.index.name == 'expression'
+    assert spec.index.name == 'Expression'
     assert list(spec.columns) == ['alt0', 'alt1']
     npt.assert_array_equal(
         spec.values,

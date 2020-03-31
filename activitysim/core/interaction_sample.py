@@ -236,6 +236,7 @@ def _interaction_sample(
     else:
         trace_rows = trace_ids = None
 
+
     # interaction_utilities is a df with one utility column and one row per interaction_df row
     interaction_utilities, trace_eval_results \
         = eval_interaction_utilities(spec, interaction_df, locals_d, trace_label, trace_rows)

@@ -191,7 +191,7 @@ def compute_logsums(
     logsum_settings = config.read_model_settings(model_settings['LOGSUM_SETTINGS'])
 
     omnibus_coefficient_spec = \
-        assign.read_constant_spec(config.config_file_path(logsum_settings['COEFFS']))
+        assign.read_constant_spec(config.config_file_path(logsum_settings['COEFFICIENTS']))
 
     coefficient_spec = omnibus_coefficient_spec[primary_purpose]
 

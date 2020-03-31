@@ -44,10 +44,10 @@ def report_bad_choices(bad_row_map, df, trace_label, msg, trace_choosers=None, r
 
     df = df[bad_row_map]
     if trace_choosers is None:
-        hh_ids = tracing.hh_id_for_chooser(df.index, df)
+        hh_ids, trace_col = tracing.trace_id_for_chooser(df.index, df)
     else:
-        hh_ids = tracing.hh_id_for_chooser(df.index, trace_choosers)
-    df['household_id'] = hh_ids
+        hh_ids, trace_col = tracing.trace_id_for_chooser(df.index, trace_choosers)
+    df[trace_col] = hh_ids
 
     if trace_label:
         logger.info("dumping %s" % trace_label)
@@ -59,7 +59,7 @@ def report_bad_choices(bad_row_map, df, trace_label, msg, trace_choosers=None, r
     for idx in df.index[:MAX_PRINT].values:
 
         row_msg = "%s : %s in: %s = %s (hh_id = %s)" % \
-                  (trace_label, msg, df.index.name, idx, df.household_id.loc[idx])
+                  (trace_label, msg, df.index.name, idx, df[trace_col].loc[idx])
 
         logger.warning(row_msg)
 

@@ -511,6 +511,33 @@ def hh_id_for_chooser(id, choosers):
 
     return hh_id
 
+def trace_id_for_chooser(id, choosers):
+    """
+
+    Parameters
+    ----------
+    id - scalar id (or list of ids) from chooser index
+    choosers - pandas dataframe whose index contains ids
+
+    Returns
+    -------
+        scalar household_id or series of household_ids
+    """
+
+    hh_id = None
+    for column_name in ['household_id', 'person_id']:
+        if choosers.index.name == column_name:
+            hh_id = id
+            break
+        elif column_name in choosers.columns:
+            hh_id = choosers.loc[id][column_name]
+            break
+
+    if hh_id is None:
+        print(": hh_id_for_chooser: nada, \n", choosers.columns)
+
+    return hh_id, column_name
+
 
 def dump_df(dump_switch, df, trace_label, fname):
     if dump_switch:

@@ -1,18 +1,18 @@
 
 inherit_settings: True
 
-
+write_raw_tables: False
 rng_base_seed: 0
 
 use_shadow_pricing: False
 
 # number of households to simulate
-#households_sample_size:  100
+households_sample_size:  100
 
 # to resume after last successful checkpoint, specify resume_after: _
-#resume_after: non_mandatory_tour_scheduling
+resume_after: non_mandatory_tour_scheduling
 
-trace_hh_id: 362212
+trace_hh_id: 1076848
 
 # input tables
 input_table_list:
@@ -140,17 +140,17 @@ models:
   - non_mandatory_tour_destination
   - non_mandatory_tour_scheduling
   - tour_mode_choice_simulate
-  - atwork_subtour_frequency
-  - atwork_subtour_destination
-  - atwork_subtour_scheduling
-  - atwork_subtour_mode_choice
-  - stop_frequency
-  - trip_purpose
-  - trip_destination
-  - trip_purpose_and_destination
-  - trip_scheduling
-  - trip_mode_choice
-  - write_data_dictionary
-  - track_skim_usage
+#  - atwork_subtour_frequency
+#  - atwork_subtour_destination
+#  - atwork_subtour_scheduling
+#  - atwork_subtour_mode_choice
+#  - stop_frequency
+#  - trip_purpose
+#  - trip_destination
+#  - trip_purpose_and_destination
+#  - trip_scheduling
+#  - trip_mode_choice
+#  - write_data_dictionary
+#  - track_skim_usage
   - write_tables
 

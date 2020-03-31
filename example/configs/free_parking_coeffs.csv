@@ -1,0 +1,9 @@
+coefficient_name,value
+coef_asc_san_francisco,-2.6403
+coef_asc_santa_clara,0.2118
+coef_asc_alameda,-0.1092
+coef_income_very_high,0.23
+coef_income_high,0.23
+coef_hh_size_4_up,0.253
+coef_more_autos_than_workers,0.231
+coef_fewer_autos_than_workers,-1.479

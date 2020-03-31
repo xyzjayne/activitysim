@@ -1,27 +1,16 @@
 # ActivitySim
 # See full license in LICENSE.txt.
 
-from __future__ import (absolute_import, division, print_function, )
-from future.standard_library import install_aliases
-install_aliases()  # noqa: E402
-
-from future.utils import iteritems
-
 import logging
-
-import pandas as pd
 
 from activitysim.core import tracing
 from activitysim.core import config
 from activitysim.core import pipeline
 from activitysim.core import simulate
 from activitysim.core import inject
-from activitysim.core.mem import force_garbage_collect
-
-from activitysim.core.interaction_sample_simulate import interaction_sample_simulate
-from activitysim.core.interaction_sample import interaction_sample
 
 from .util import expressions
+from .util import estimation
 
 logger = logging.getLogger(__name__)
 
@@ -59,8 +48,21 @@ def free_parking(
             locals_dict=locals_d,
             trace_label=trace_label)
 
-    model_spec = simulate.read_model_spec(file_name='free_parking.csv')
+
+    model_spec = simulate.read_model_spec(model_settings=model_settings)
+    coefficients_df = simulate.read_model_coeffecients(model_settings)
+    model_spec = simulate.eval_coefficients(model_spec, coefficients_df)
+
     nest_spec = config.get_logit_model_settings(model_settings)
+
+    if estimation.manager.begin_estimation('free_parking'):
+        estimation.manager.write_model_settings(model_settings, 'free_parking.yaml')
+        estimation.manager.write_spec(model_settings)
+        estimation.manager.write_coefficients(coefficients_df)
+        estimation.manager.write_choosers(choosers)
+        estimation_hook = estimation.write_hook
+    else:
+        estimation_hook = None
 
     choices = simulate.simple_simulate(
         choosers=choosers,
@@ -69,13 +71,18 @@ def free_parking(
         locals_d=constants,
         chunk_size=chunk_size,
         trace_label=trace_label,
-        trace_choice_name='free_parking_at_work')
+        trace_choice_name='free_parking_at_work',
+        estimation_hook=estimation_hook)
 
-    persons = persons.to_frame()
-
-    # no need to reindex as we used all households
     free_parking_alt = model_settings['FREE_PARKING_ALT']
     choices = (choices == free_parking_alt)
+
+    if estimation.manager.estimating:
+        estimation.manager.write_choices(choices)
+        choices = estimation.manager.get_override_choices(choices)
+        estimation.manager.end_estimation()
+
+    persons = persons.to_frame()
     persons['free_parking_at_work'] = choices.reindex(persons.index).fillna(0).astype(bool)
 
     pipeline.replace_table("persons", persons)

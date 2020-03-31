@@ -57,59 +57,48 @@ rng_base_seed: 1
 # initialize.py has switch to write sampled raw data
 write_raw_tables: True
 
-python simulation.py -c configs_survey_100 -c ../example/configs -o output_survey_100
+python simulation.py -c configs_survey_2000 -c ../example/configs -o output_survey_2000
 
 # copy canonical data files to data folder (example_estimation/output_survey_100/raw_tables -> example_estimation/data)
 
 
 ############
 
-  #- initialize_landuse
-  #- compute_accessibility
-  #- initialize_households
-  - school_location
-        persons.school_taz (shadow pricing?)
-  - workplace_location
-        persons.workplace_taz
-  - auto_ownership_simulate
-        households['auto_ownership'] = choices cars0,cars1,cars2,cars3,cars4
-  - free_parking
-        persons['free_parking_at_work'] = True,False
-  - cdap_simulate
-        persons['cdap_activity'] = N,M,H
-        persons['cdap_rank'] = 1,2,3,4,5,6,...
-  - mandatory_tour_frequency
-          persons.mandatory_tour_frequency  = work1,work2,school1,school2,work_and_school
-          creates mandatory_tours
-  - mandatory_tour_scheduling
-        tdd_choices, timetable = vts.vectorize_tour_scheduling
-            tours.start
-            tours.end
-            tours.duration
-            tours.tdd
-        timetable
-  - joint_tour_frequency
-  - joint_tour_composition
-  - joint_tour_participation
-  - joint_tour_destination
-  - joint_tour_scheduling
-  - non_mandatory_tour_frequency
-  - non_mandatory_tour_destination
-  - non_mandatory_tour_scheduling
-  - tour_mode_choice_simulate
-        primary_tours['tour_mode'] = choices
-  - atwork_subtour_frequency
-        tours['atwork_subtour_frequency'] = no_subtours,eat,business1,maint,business2,eat_business
-        # creates subtours
-  - atwork_subtour_destination
-  - atwork_subtour_scheduling
-  - atwork_subtour_mode_choice
-  - stop_frequency
-  - trip_purpose
-  - trip_destination
-  - trip_purpose_and_destination
-  - trip_scheduling
-  - trip_mode_choice
-  - write_data_dictionary
-  - track_skim_usage
-  - write_tables
+
+From: Mark Bradley
+Sent: Thursday, March 26, 2020 1:45 PM
+To: Jeffrey Doyle <Jeff.Doyle@rsginc.com>; Ben Stabler <Ben.Stabler@rsginc.com>
+Subject: RE: Estimation data bundle take 2
+
+OK, here are three adapted files that I think would work for this model,
+and be pretty easy to adapt to use with any estimation software:
+
+The adapted coefficients file has the following changes:
+Changed from five columns of coefficients to one column.
+Renamed coefficients to start with c_car0_...., c_car1_....,
+(I think the car0, etc. could also come at the end of the string- just needs to be done consistently)
+Added a constrained coefficient column with T, F (could be TRUE, FALSE).
+By default, it should be TRUE for any coefficient  with value 0, and FALSE for all others.
+
+The adapted SPEC file has the following changes:
+Added a first column with expression labels.  I used Util_Exp_1 to Util_Exp_29 in this case.
+Change the names of the coefficients in the alternatives columns to have the same c_car0.., c_car1…, etc names
+that are in the adapted coefficients file.
+
+Added some availability expressions, Avail_Exp_1 to Avail_Exp_5.
+They’re not really necessary for this model, but just as an example of how to do it for cases where they are used.
+In general, an alternative is true if the expression value is TRUE for ALL availability expressions
+that are TRUE in that column. Here, each of the 5 alternatives has one expressions that applies and
+all five are always true, so everything is available.  But, for example, for Aval_Exp_5, you could put
+the expression (nadults>=4), so the 4+ car alternative would only be available for households with 4+ adults.
+
+The combined values file was created as follows
+(I combined these into one file, because it will save the user a step –
+some estimation software won’t accept multiple data files):
+Sorted the choices file by household id and started with that.
+Took the expression_values.csv file and took the 29 expression values for each of the households and transposed them
+into the Util_Exp_1 to Util_Exp_29 columns. (I only included the first 10 HH, so I wouldn’t have to do this 100 times.)
+Added the columns Avail_Exp_1 to Avail_Exp_5 and set them to true.
+Took the choosers.csv file and sorted by household ID and appended those values to the end of each record.
+(These variables aren’t necessary to estimate the base model, but may be useful to have on the file if
+the user wants to add new variables into the model specification.

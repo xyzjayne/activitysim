@@ -1,12 +1,6 @@
 # ActivitySim
 # See full license in LICENSE.txt.
 
-# from __future__ import (absolute_import, division, print_function, )
-# from future.standard_library import install_aliases
-# install_aliases()  # noqa: E402
-#
-# from future.utils import iteritems
-
 import logging
 
 import numpy as np
@@ -95,9 +89,9 @@ def write_estimation_specs(model_settings, settings_file):
     estimation.manager.write_spec(model_settings, tag='SPEC')
     estimation.manager.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
 
-    estimation.manager.copy_model_settings('shadow_pricing.yaml', tag='shadow_pricing')
+    #estimation.manager.copy_model_settings('shadow_pricing.yaml', tag='shadow_pricing')
 
-    estimation.manager.write_table(inject.get_injectable('size_terms'), 'size_terms', index=True, append=False)
+    #estimation.manager.write_table(inject.get_injectable('size_terms'), 'size_terms', index=True, append=False)
     estimation.manager.write_table(inject.get_table('land_use').to_frame(), 'landuse', index=True, append=False)
 
 
@@ -119,7 +113,15 @@ def spec_for_segment(model_settings, spec_id, segment_name):
     """
 
     spec = simulate.read_model_spec(file_name=model_settings[spec_id])
-    coefficients = simulate.get_segment_coefficients(model_settings, segment_name)
+    coefficients = simulate.read_model_coeffecients(model_settings)
+
+    if len(spec.columns) > 1:
+        # if spec is segmented
+        spec = spec[[segment_name]]
+    else:
+        # otherwise we expect a single coefficient column
+        assert spec.columns[0] == 'coefficient'
+
     spec = simulate.eval_coefficients(spec, coefficients)
 
     # drop spec rows with zero coefficients since they won't have any effect (0 marginal utility)
@@ -169,33 +171,9 @@ def run_location_sample(
     logger.info("Running %s with %d persons" % (trace_label, len(choosers.index)))
 
     if estimation.manager.estimating:
-
-        # FIXME return full alternative set rather than sample
-        #bug remove if not used...
-        short_circuit_choices = False
-
-        if short_circuit_choices:
-            logger.info("Estimation mode for %s using unsampled alternatives short_circuit_choices" % (trace_label,))
-
-            # FIXME pathological knowledge of interaction_sample internals
-            # interaction_sample copies index into the dataframe, so it will be
-            # available as the "destination" for the skims dereference
-            # this in turn causes the chooser (orig) zone to be given the suffix '_chooser' (e.g. TAZ_chooser)
-            alternatives[alternatives.index.name] = alternatives.index
-
-            choices = pd.DataFrame(
-                {
-                    alt_dest_col_name: np.tile(alternatives.index.values, len(choosers.index)),
-                    'prob': 0,
-                    'pick_count': 1
-                },
-                index=np.repeat(choosers.index.values, len(alternatives.index)))
-            choices.index.name = choosers.index.name
-            return choices
-        else:
-            # FIXME interaction_sample will return unsampled complete alternatives with probs and pick_count
-            logger.info("Estimation mode for %s using unsampled alternatives short_circuit_choices" % (trace_label,))
-            sample_size = 0
+        # FIXME interaction_sample will return unsampled complete alternatives with probs and pick_count
+        logger.info("Estimation mode for %s using unsampled alternatives short_circuit_choices" % (trace_label,))
+        sample_size = 0
 
     # create wrapper with keys for this lookup - in this case there is a TAZ in the choosers
     # and a TAZ in the alternatives which get merged during interaction
@@ -341,8 +319,6 @@ def run_location_simulate(
         estimation_hook = None
 
     spec = spec_for_segment(model_settings, spec_id='SPEC', segment_name=segment_name)
-    coefficients = simulate.get_segment_coefficients(model_settings, segment_name)
-    spec = simulate.eval_coefficients(spec, coefficients)
 
     choices = interaction_sample_simulate(
         choosers,
@@ -397,6 +373,7 @@ def run_location_choice(
 
     # maps segment names to compact (integer) ids
     segment_ids = model_settings['SEGMENT_IDS']
+    #segment_ids = model_settings.get('SEGMENT_IDS', {'': None})
 
     choices_list = []
     for segment_name, segment_id in segment_ids.items():
@@ -502,7 +479,7 @@ def iterate_location_choice(
     spc = shadow_pricing.load_shadow_price_calculator(model_settings)
     max_iterations = spc.max_iterations
 
-    logging.debug("%s max_iterations: %s" % (trace_label, max_iterations))
+    logger.debug("%s max_iterations: %s" % (trace_label, max_iterations))
 
     choices = None
     for iteration in range(1, max_iterations + 1):
@@ -528,7 +505,7 @@ def iterate_location_choice(
             spc.write_trace_files(iteration)
 
         if shadow_pricing.use_shadow_pricing() and spc.check_fit(iteration):
-            logging.info("%s converged after iteration %s" % (trace_label, iteration,))
+            logger.info("%s converged after iteration %s" % (trace_label, iteration,))
             break
 
     # - shadow price table

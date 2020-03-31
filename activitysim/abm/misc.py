@@ -64,7 +64,7 @@ def trace_hh_id(settings):
     id = settings.get('trace_hh_id', None)
 
     if id and not isinstance(id, int):
-        logger.warning("setting trace_hh_id is wrong type, should be an int, but was %s" % type(id))
+        logger.warning("setting trace_hh_id is wrong type, should be an int, but was %s (%s)" % (type(id), id))
         id = None
 
     return id

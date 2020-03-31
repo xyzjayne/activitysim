@@ -28,6 +28,9 @@ from . import chunk
 
 logger = logging.getLogger(__name__)
 
+SPEC_DESCRIPTION_NAME = 'Description'
+SPEC_EXPRESSION_NAME = 'Expression'
+SPEC_LABEL_NAME = 'Label'
 
 def random_rows(df, n):
 
@@ -63,9 +66,7 @@ def read_model_alts(file_path, set_index=None):
     return df
 
 
-def read_model_spec(model_settings=None, file_name=None,
-                    description_name="Description",
-                    expression_name="Expression"):
+def read_model_spec(model_settings=None, tag='SPEC', file_name=None):
     """
     Read a CSV model specification into a Pandas DataFrame or Series.
 
@@ -104,7 +105,7 @@ def read_model_spec(model_settings=None, file_name=None,
 
     if model_settings is not None:
         assert isinstance(model_settings, dict)
-        file_name = model_settings['SPEC']
+        file_name = model_settings[tag]
     else:
         assert isinstance(file_name, str)
         if not file_name.lower().endswith('.csv'):
@@ -114,17 +115,21 @@ def read_model_spec(model_settings=None, file_name=None,
 
     spec = pd.read_csv(file_path, comment='#')
 
-    spec = spec.dropna(subset=[expression_name])
+    spec = spec.dropna(subset=[SPEC_EXPRESSION_NAME])
 
     # don't need description and set the expression to the index
-    if description_name in spec.columns:
-        spec = spec.drop(description_name, axis=1)
+    if SPEC_DESCRIPTION_NAME in spec.columns:
+        spec = spec.drop(SPEC_DESCRIPTION_NAME, axis=1)
 
-    spec = spec.set_index(expression_name).fillna(0)
+    spec = spec.set_index(SPEC_EXPRESSION_NAME).fillna(0)
 
     # ensure uniqueness of spec index by appending comment with dupe count
     # this allows us to use pandas dot to compute_utilities
     uniquify_spec_index(spec)
+
+    if SPEC_LABEL_NAME in spec:
+        spec = spec.set_index(SPEC_LABEL_NAME, append=True)
+        assert isinstance(spec.index, pd.MultiIndex)
 
     # drop any rows with all zeros since they won't have any effect (0 marginal utility)
     zero_rows = (spec == 0).all(axis=1)
@@ -159,12 +164,10 @@ def read_model_coeffecients(model_settings):
 
     """
 
-    if 'COEFFS' not in model_settings:
-        print(model_settings)
-    assert 'COEFFS' in model_settings, \
-        "'COEFFS' not in model_settings in %s" % model_settings.get('source_file_paths')
+    assert 'COEFFICIENTS' in model_settings, \
+        "'COEFFICIENTS' not in model_settings in %s" % model_settings.get('source_file_paths')
 
-    coeffs_file_name = model_settings['COEFFS']
+    coeffs_file_name = model_settings['COEFFICIENTS']
 
     file_path = config.config_file_path(coeffs_file_name)
     coefficients =  pd.read_csv(file_path, comment='#', index_col='coefficient_name')
@@ -172,9 +175,17 @@ def read_model_coeffecients(model_settings):
     return coefficients
 
 
-def get_segment_coefficients(model_settings, segment_name):
-    omnibus_coefficients = read_model_coeffecients(model_settings)
-    coefficients = {k: v for k, v in omnibus_coefficients[segment_name].items()}
+def get_segment_coefficients(model_settings, segment_name=None):
+    coefficients_df = read_model_coeffecients(model_settings)
+    if segment_name is None:
+        assert(len(coefficients_df.columns) == 1)
+        coefficients_col = coefficients_df[0]
+    else:
+        coefficients_col = coefficients_df[segment_name]
+
+    return coefficients_col.to_dict()
+
+    coefficients = {k: v for k, v in coefficients_col.items()}
     return coefficients
 
 
@@ -182,7 +193,16 @@ def eval_coefficients(spec, coefficients):
 
     spec = spec.copy() # don't clobber input spec
 
+    if isinstance(coefficients, pd.DataFrame):
+        assert ('value' in coefficients.columns)
+        coefficients = coefficients['value'].to_dict()
+
+    assert isinstance(coefficients, dict), \
+        "eval_coefficients doesn't grok type of coefficients: %s" % (type(coefficients))
+
     for c in spec.columns:
+        if c == SPEC_LABEL_NAME:
+            continue
         spec[c] = spec[c].apply(lambda x: eval(str(x), {}, coefficients))
 
     return spec
@@ -240,7 +260,10 @@ def eval_utilities(spec, choosers, locals_d=None, trace_label=None, have_trace_t
 
     locals_dict['df'] = choosers
 
-    exprs = spec.index
+    exprs = spec.index.get_level_values(SPEC_EXPRESSION_NAME) if isinstance(spec.index, pd.MultiIndex) else spec.index
+    #assert isinstance(spec.index, pd.MultiIndex)
+    #exprs = spec.index.get_level_values(SPEC_EXPRESSION_NAME)
+
     expression_values = np.empty((spec.shape[0], choosers.shape[0]))
     for i, expr in enumerate(exprs):
         try:
@@ -253,7 +276,11 @@ def eval_utilities(spec, choosers, locals_d=None, trace_label=None, have_trace_t
             raise err
 
     if estimation_hook is not None:
-        df = pd.DataFrame(data=expression_values.transpose(), index=choosers.index, columns=spec.index)
+
+        df = pd.DataFrame(
+            data=expression_values.transpose(),
+            index=choosers.index,
+            columns=spec.index.get_level_values(SPEC_LABEL_NAME))
         df.index.name = choosers.index.name
         estimation_hook(df, 'expression_values')
 
@@ -656,9 +683,6 @@ def eval_mnl(choosers, spec, locals_d, custom_chooser, estimation_hook,
     utilities = eval_utilities(spec, choosers, locals_d, trace_label, have_trace_targets, estimation_hook)
     chunk.log_df(trace_label, "utilities", utilities)
 
-    if estimation_hook:
-        estimation_hook(utilities, 'utilities')
-
     if have_trace_targets:
         tracing.trace_df(utilities, '%s.utilities' % trace_label,
                          column_labels=['alternative', 'utility'])
@@ -738,9 +762,6 @@ def eval_nl(choosers, spec, nest_spec, locals_d, custom_chooser, estimation_hook
 
     raw_utilities = eval_utilities(spec, choosers, locals_d, trace_label, have_trace_targets, estimation_hook)
     chunk.log_df(trace_label, "raw_utilities", raw_utilities)
-
-    if estimation_hook:
-        estimation_hook(raw_utilities, 'raw_utilities')
 
     if have_trace_targets:
         tracing.trace_df(raw_utilities, '%s.raw_utilities' % trace_label,

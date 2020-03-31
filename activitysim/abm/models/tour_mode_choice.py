@@ -82,10 +82,6 @@ def tour_mode_choice_simulate(tours, persons_merged,
         estimation.manager.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
         estimation.manager.write_spec(model_settings)
         estimation.manager.write_model_settings(model_settings, 'tour_mode_choice.yaml')
-        # FIXME these are less readable, but behave correctly in case of inherited settings
-        #estimation.manager.write_nest_spec(nest_spec)
-        #estimation.manager.write_constants(constants)
-
         # FIXME run_tour_mode_choice_simulate writes choosers post-annotation
 
     choices_list = []

@@ -245,7 +245,7 @@ def non_mandatory_tour_frequency(persons, persons_merged,
 
     extended_tour_count = tour_counts.sum().sum()
 
-    logging.info("extend_tour_counts increased nmtf tour count by %s from %s to %s" %
+    logger.info("extend_tour_counts increased nmtf tour count by %s from %s to %s" %
                  (extended_tour_count - prev_tour_count, prev_tour_count, extended_tour_count))
 
     # - create the non_mandatory tours

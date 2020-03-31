@@ -897,7 +897,8 @@ def run_cdap(
         cdap_interaction_coefficients,
         cdap_fixed_relative_proportions,
         locals_d,
-        chunk_size=0, trace_hh_id=None, trace_label=None):
+        chunk_size=0, trace_hh_id=None, trace_label=None,
+        estimation_hook=None):
     """
     Choose individual activity patterns for persons.
 

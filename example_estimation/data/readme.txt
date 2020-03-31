@@ -1,1 +1,1 @@
-100 household data file
+100 household data file generated from data_full with random seed 1

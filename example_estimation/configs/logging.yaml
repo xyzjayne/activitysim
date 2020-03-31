@@ -14,6 +14,11 @@ logging:
 
   loggers:
 
+    estimation:
+      level: DEBUG
+      handlers: [console, elogfile]
+      propagate: false
+
     activitysim:
       level: INFO
       handlers: [console, logfile]
@@ -25,6 +30,13 @@ logging:
       propagate: false
 
   handlers:
+
+    elogfile:
+      class: logging.FileHandler
+      filename: !!python/object/apply:activitysim.core.config.log_file_path ['estimation.log']
+      mode: w
+      formatter: fileFormatter
+      level: NOTSET
 
     logfile:
       class: logging.FileHandler

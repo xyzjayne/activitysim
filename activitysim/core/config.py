@@ -216,7 +216,7 @@ def get_logit_model_settings(model_settings):
         logit_type = model_settings.get('LOGIT_TYPE', 'MNL')
 
         if logit_type not in ['NL', 'MNL']:
-            logging.error("Unrecognized logit type '%s'" % logit_type)
+            logger.error("Unrecognized logit type '%s'" % logit_type)
             raise RuntimeError("Unrecognized logit type '%s'" % logit_type)
 
         if logit_type == 'NL':

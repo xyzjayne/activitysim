@@ -1,16 +1,53 @@
 
 
-# model default is None
-#model: school_location
-model: workplace_location
-#model: auto_ownership
-#model: tour_mode_choice
+#enable: True
+
+models:
+  - school_location
+  - workplace_location
+  - auto_ownership
+  - free_parking
+#  - cdap
 
 
-school_location:
-  file_name: estimation_choices/final_persons.csv
-  column_name: school_taz
+model_settings:
 
-workplace_location:
-  file_name: estimation_choices/final_persons.csv
-  column_name: workplace_taz
+  school_location:
+     file_name: estimation_choices/override_persons.csv
+     column_name: school_taz
+     omnibus_tables:
+       - alternatives
+       - interaction_expression_values
+     omnibus_tables_append_columns: False
+
+  workplace_location:
+    file_name: estimation_choices/override_persons.csv
+    column_name: workplace_taz
+    omnibus_tables:
+      - alternatives
+      - interaction_expression_values
+    omnibus_tables_append_columns: False
+
+  auto_ownership:
+    file_name: estimation_choices/override_households.csv
+    column_name: auto_ownership
+    omnibus_tables:
+        - override_choices
+        - expression_values
+        - choosers
+    omnibus_tables_append_columns: True
+
+  free_parking:
+    file_name: estimation_choices/override_persons.csv
+    column_name: free_parking_at_work
+    omnibus_tables:
+        - override_choices
+        - expression_values
+        - choosers
+    omnibus_tables_append_columns: True
+
+#  cdap:
+#    file_name: estimation_choices/override_persons.csv
+#    column_name:
+#      - cdap_activity
+#      - cdap_rank

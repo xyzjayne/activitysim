@@ -19,7 +19,7 @@ from .simulate import set_skim_wrapper_targets
 from . import chunk
 from . import mem
 
-from . import assign
+from . import simulate
 
 from activitysim.core.mem import force_garbage_collect
 
@@ -98,6 +98,8 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows, esti
     utilities = pd.DataFrame({'utility': 0.0}, index=df.index)
     no_variability = has_missing_vals = 0
 
+    print(spec)
+    #bug
 
     if estimation_hook is not None:
         #expression_values_df = pd.DataFrame(index=df.index)
@@ -105,12 +107,25 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows, esti
         # first column is alt id
         expression_values_df = df[[df.columns[0]]].copy()
 
+    if isinstance(spec.index, pd.MultiIndex):
+        exprs = spec.index.get_level_values(simulate.SPEC_EXPRESSION_NAME)
+        labels = spec.index.get_level_values(simulate.SPEC_LABEL_NAME)
+    else:
+        exprs = spec.index
+        labels = spec.index
 
-    for expr, coefficient in zip(spec.index, spec.iloc[:, 0]):
+    #assert isinstance(spec.index, pd.MultiIndex)
+    #exprs = spec.index.get_level_values(SPEC_EXPRESSION_NAME)
+
+    for expr, label, coefficient in zip(exprs, labels, spec.iloc[:, 0]):
         try:
 
+            print("expr, label, coefficient", expr, label, coefficient)
             # - allow temps of form _od_DIST@od_skim['DIST']
             if expr.startswith('_'):
+
+                print("expr.startswith('_')", expr, label, coefficient)
+
                 target = expr[:expr.index('@')]
                 rhs = expr[expr.index('@') + 1:]
                 v = to_series(eval(rhs, globals(), locals_d))
@@ -139,7 +154,7 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows, esti
                 has_missing_vals += 1
 
             if estimation_hook is not None:
-                expression_values_df.insert(loc=len(expression_values_df.columns), column=expr, value=v)
+                expression_values_df.insert(loc=len(expression_values_df.columns), column=label, value=v)
                 #expression_values_df.insert(loc=len(expression_values_df.columns), column='coefficient', value=coefficient, allow_duplicates=True)
 
             utilities.utility += (v * coefficient).astype('float')
@@ -161,15 +176,17 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows, esti
 
         # mem.trace_memory_info("eval_interaction_utilities: %s" % expr)
 
+
     if estimation_hook is not None:
+
         estimation_hook(expression_values_df, 'interaction_expression_values')
         del expression_values_df
 
-        # add alt_column for legibility
-        alt_column_name = df.columns[0]
-        utilities.insert(loc=0, column=alt_column_name, value=df[alt_column_name])
-        estimation_hook(utilities, 'utilities')
-        utilities.drop(columns=alt_column_name, inplace=True)
+        # # add alt_column for legibility
+        # alt_column_name = df.columns[0]
+        # utilities.insert(loc=0, column=alt_column_name, value=df[alt_column_name])
+        # estimation_hook(utilities, 'utilities')
+        # utilities.drop(columns=alt_column_name, inplace=True)
 
     if no_variability > 0:
         logger.warning("%s: %s columns have no variability" % (trace_label, no_variability))
