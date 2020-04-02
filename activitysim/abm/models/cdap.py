@@ -78,7 +78,7 @@ def cdap_simulate(persons_merged, persons, households,
         estimation_hook = estimation.write_hook
         for hhsize in range(2, cdap.MAX_HHSIZE + 1):
             spec = cdap.get_cached_spec(hhsize)
-            estimation.manager.write_table(spec, 'spec_%s' % hhsize, index=True, append=False)
+            estimation.manager.write_table(spec, 'spec_%s' % hhsize, append=False)
     else:
         estimation_hook = None
 
@@ -104,8 +104,7 @@ def cdap_simulate(persons_merged, persons, households,
     persons = persons.to_frame()
 
     choices = choices.reindex(persons.index)
-    persons['cdap_activity'] = choices.cdap_activity
-    persons['cdap_rank'] = choices.cdap_rank
+    persons['cdap_activity'] = choices
 
     expressions.assign_columns(
         df=persons,

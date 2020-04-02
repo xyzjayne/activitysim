@@ -87,12 +87,12 @@ def write_estimation_specs(model_settings, settings_file):
     estimation.manager.write_model_settings(model_settings, settings_file)
     estimation.manager.write_spec(model_settings, tag='SAMPLE_SPEC')
     estimation.manager.write_spec(model_settings, tag='SPEC')
-    estimation.manager.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
+    estimation.manager.write_coefficients(simulate.read_model_coefficients(model_settings=model_settings))
 
     #estimation.manager.copy_model_settings('shadow_pricing.yaml', tag='shadow_pricing')
 
-    #estimation.manager.write_table(inject.get_injectable('size_terms'), 'size_terms', index=True, append=False)
-    estimation.manager.write_table(inject.get_table('land_use').to_frame(), 'landuse', index=True, append=False)
+    estimation.manager.write_table(inject.get_injectable('size_terms'), 'size_terms', append=False)
+    estimation.manager.write_table(inject.get_table('land_use').to_frame(), 'landuse', append=False)
 
 
 def spec_for_segment(model_settings, spec_id, segment_name):
@@ -113,7 +113,7 @@ def spec_for_segment(model_settings, spec_id, segment_name):
     """
 
     spec = simulate.read_model_spec(file_name=model_settings[spec_id])
-    coefficients = simulate.read_model_coeffecients(model_settings)
+    coefficients = simulate.read_model_coefficients(model_settings)
 
     if len(spec.columns) > 1:
         # if spec is segmented

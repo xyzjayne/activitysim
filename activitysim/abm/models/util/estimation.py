@@ -63,14 +63,6 @@ class EstimationManager(object):
         self.estimating = model_name
         logger.info("begin estimation '%s'" % (model_name,))
 
-        # ensure there are choice override settings for this model
-        if model_name not in self.model_settings:
-            logger.warning("get_override_choices - no choice settings for %s in %s",
-                         self.estimating, ESTIMATION_SETTINGS_FILE_NAME)
-
-        # assert model_name in self.model_settings, \
-        #     "Choice override settings for model %s not found in estimation settings file."
-
         # ensure the output data directory exists
         output_dir = self.data_directory()
         if not os.path.exists(output_dir):
@@ -87,10 +79,19 @@ class EstimationManager(object):
                 except Exception as e:
                     print(e)
 
-        self.tables = {}
-        self.omnibus_tables = self.model_settings[model_name].get('omnibus_tables', [])
-        self.omnibus_tables_concat_axis = 1 if self.model_settings[model_name].get('omnibus_tables_append_columns', 0) else 0
+        assert model_name in self.model_settings, \
+            "No estimation settings for %s in %s." % (model_name, ESTIMATION_SETTINGS_FILE_NAME)
 
+        settings = self.model_settings[model_name]
+
+        # FIXME - not required?
+        # assert 'override_choices' in settings, \
+        #     "override_choices not found for %s in %s." % (model_name, ESTIMATION_SETTINGS_FILE_NAME)
+
+        self.omnibus_tables = settings.get('omnibus_tables', {})
+        self.omnibus_tables_append_columns = settings.get('omnibus_tables_append_columns', [])
+        self.tables = {}
+        self.tables_to_cache = [table_name for tables in self.omnibus_tables.values() for table_name in tables]
         return True
 
     def end_estimation(self):
@@ -121,50 +122,53 @@ class EstimationManager(object):
 
         return os.path.join(self.data_directory(), file_name)
 
-    def cache_table(self, df, table_name, append=True):
+    def write_table(self, df, table_name, index=True, append=True):
+
+        def cache_table(df, table_name, append):
+            if table_name in self.tables and not append:
+                raise RuntimeError("cache_table %s append=False and table exists" % (table_name,))
+            if table_name in self.tables:
+                self.tables[table_name] = pd.concat([self.tables[table_name], df])
+            else:
+                self.tables[table_name] = df.copy()
+
+        def write_table(df, table_name, index, append):
+            file_path = self.file_path(table_name, 'csv')
+            file_exists = os.path.isfile(file_path)
+            if file_exists and not append:
+                raise RuntimeError("write_table %s append=False and file exists: %s" % (table_name, file_path))
+            df.to_csv(file_path, mode='a', index=index, header=(not file_exists))
 
         assert self.estimating
 
-        if table_name in self.tables and not append:
-            raise RuntimeError("cache_table %s append=False and table exists" % (table_name,))
-
-        if table_name in self.tables:
-            self.tables[table_name] = pd.concat([self.tables[table_name], df])
+        if table_name in self.tables_to_cache:
+            cache_table(df, table_name, append)
+            logger.debug('write_table %s cache: %s' % (self.estimating, table_name))
         else:
-            self.tables[table_name] = df.copy()
-
-        #print("cache_table", table_name, self.tables[table_name])
-
-    def write_table(self, df, table_name, index=True, append=True):
-
-        file_path = self.file_path(table_name, 'csv')
-
-        file_exists = os.path.isfile(file_path)
-
-        if file_exists and not append:
-            raise RuntimeError("write_table %s append=False and file exists: %s" % (table_name, file_path))
-
-        df.to_csv(file_path, mode='a', index=index, header=(not file_exists))
-
-        logger.debug('estimate.write_table: %s' % file_path)
+            write_table(df, table_name, index, append)
+            logger.debug('write_table %s write: %s' % (self.estimating, table_name))
 
     def write_omnibus_table(self):
 
         if len(self.omnibus_tables) == 0:
             return
 
-        omnibus_tables = [c for c in self.omnibus_tables if c in self.tables]
+        for omnibus_table, table_names in self.omnibus_tables.items():
 
-        df = pd.concat([self.tables[t] for t in omnibus_tables], axis=self.omnibus_tables_concat_axis)
+            # ignore any ables not in cache
+            table_names = [t for t in table_names if t in self.tables]
+            concat_axis = 1 if omnibus_table in self.omnibus_tables_append_columns else 0
 
-        file_path = self.file_path('values_combined', 'csv')
+            df = pd.concat([self.tables[t] for t in table_names], axis=concat_axis)
 
-        assert not os.path.isfile(file_path)
+            file_path = self.file_path(omnibus_table, 'csv')
 
-        df.sort_index(ascending=True, inplace=True, kind='mergesort')
-        df.to_csv(file_path, mode='a', index=True, header=True)
+            assert not os.path.isfile(file_path)
 
-        logger.debug('estimate.write_omnibus_choosers: %s' % file_path)
+            df.sort_index(ascending=True, inplace=True, kind='mergesort')
+            df.to_csv(file_path, mode='a', index=True, header=True)
+
+            logger.debug('write_omnibus_choosers %s write: %s' % (self.estimating, file_path))
 
 
     def write_dict(self, d, dict_name):
@@ -185,23 +189,27 @@ class EstimationManager(object):
 
     def write_coefficients(self, coefficients_df, tag='coefficients'):
         assert self.estimating
-        self.write_table(coefficients_df, tag, index=True, append=False)
+        self.write_table(coefficients_df, tag, append=False)
+
+    def write_coefficients_template(self, coefficients_df, tag='coefficients_template'):
+        assert self.estimating
+        self.write_table(coefficients_df, tag, append=False)
 
     def write_choosers(self, choosers_df):
-        self.cache_table(choosers_df, 'choosers', append=True)
-        self.write_table(choosers_df, 'choosers', index=True, append=True)
-
+        self.write_table(choosers_df, 'choosers', append=True)
 
     def write_alternatives(self, alternatives_df):
-        #self.write_table(alternatives_df, 'alternatives', index=True, append=True)
-        self.cache_table(self.melt_alternatives(alternatives_df, column_name='xxx'), 'alternatives', append=True)
-
+        self.write_table(self.melt_alternatives(alternatives_df, column_name='xxx'), 'alternatives', append=True)
 
     def write_choices(self, choices):
-        if isinstance(choices, pd.Series):
-            choices = choices.to_frame(name='choices')
 
-        self.cache_table(choices, 'choices', append=True)
+        # no need to write choices if also writing override_choices
+        # if 'override_choices' in self.model_settings.get(self.estimating):
+        #     return
+
+        if isinstance(choices, pd.Series):
+            choices = choices.to_frame(name='model_choice')
+        self.write_table(choices, 'choices', append=True)
 
 
     def write_constants(self, constants):
@@ -287,16 +295,11 @@ class EstimationManager(object):
     def write_hook(self, df, table_name):
 
         if table_name == 'expression_values':
-
-            self.cache_table(df, table_name, append=True)
-
+            self.write_table(df, table_name, append=True)
 
         elif table_name == 'interaction_expression_values':
-
             df = self.melt_alternatives(df, column_name='utility_expression')
-            #self.write_table(df, table_name, index=True, append=True)
-            self.cache_table(df, table_name, append=True)
-
+            self.write_table(df, table_name, append=True)
         else:
             self.write_table(df, table_name)
 
@@ -308,10 +311,10 @@ class EstimationManager(object):
         """
         assert self.estimating
 
-        choice_settings = self.model_settings.get(self.estimating)
+        choice_settings = self.model_settings.get(self.estimating).get('override_choices')
 
         if choice_settings is None:
-            logger.warn("estimation.get_override_choices - no override because no choice settings found for %s. ",
+            logger.warning("estimation.get_override_choices - no override because no choice settings found for %s. ",
                          self.estimating)
             return choices
 
@@ -320,48 +323,48 @@ class EstimationManager(object):
         file_path = config.data_file_path(file_name, mandatory=True)
         survey_df = pd.read_csv(file_path, index_col=0)
 
-        column_names = choice_settings['column_name']
-
         if isinstance(choices, pd.Series):
             column_name = choice_settings['column_name']
             assert isinstance(column_name, str)
 
             override_choices = choices.to_frame('model_choice')
-            override_choices['override_choice'] = reindex(survey_df[column_names], override_choices.index)
+            override_choices['override_choice'] = reindex(survey_df[column_name], override_choices.index)
 
-            self.cache_table(override_choices, 'override_choices', append=True)
+            self.write_table(override_choices, 'override_choices', append=True)
             return override_choices['override_choice']
 
-        elif isinstance(choices, pd.Series):
-            assert isinstance(choices, pd.DataFrame)
-
-            # FIXME - column_names list not really needed, but nice documentation of requirements
-            # should be same number of overrides as choice columns
-            assert set(column_names) == set(choices.columns),\
-                "column_name list (%s) does not match choices columns (%s)" % (column_names, choices.columns)
-
-            # expect choice column <column_name> in choices table
-            assert set(column_names).issubset(set(survey_df.columns)),\
-                "Missing choices columns (%s) in verride table %s" % \
-                (set(column_names) - set(survey_df.columns), file_name)
-
-            # copy in the overrides with desired column names
-            override_choices = pd.DataFrame(index=choices.index)
-            for c in column_names:
-                override_choices[c] = reindex(survey_df[c], override_choices.index)
-
-            # write table with both 'modeled_' and the 'override_' columns
-            bundle_df = pd.concat(
-                [choices.rename(columns={c: 'modeled_' + c for c in choices.columns}),
-                override_choices.rename(columns={c: 'override_' + c for c in choices.columns})]
-            )
-            self.cache_table(df=bundle_df, table_name='override_choices', append=True)
-
-            # print(choices)
-            # print(override_choices)
-            # bug
-
-            return override_choices
+        # elif isinstance(choices, pd.DataFrame):
+            # assert isinstance(choices, pd.DataFrame)
+            #
+            # column_names = choice_settings['column_name']
+            #
+            # # FIXME - column_names list not really needed, but nice documentation of requirements
+            # # should be same number of overrides as choice columns
+            # assert set(column_names) == set(choices.columns),\
+            #     "column_name list (%s) does not match choices columns (%s)" % (column_names, choices.columns)
+            #
+            # # expect choice column <column_name> in choices table
+            # assert set(column_names).issubset(set(survey_df.columns)),\
+            #     "Missing choices columns (%s) in verride table %s" % \
+            #     (set(column_names) - set(survey_df.columns), file_name)
+            #
+            # # copy in the overrides with desired column names
+            # override_choices = pd.DataFrame(index=choices.index)
+            # for c in column_names:
+            #     override_choices[c] = reindex(survey_df[c], override_choices.index)
+            #
+            # # write table with both 'modeled_' and the 'override_' columns
+            # bundle_df = pd.concat(
+            #     [choices.rename(columns={c: 'modeled_' + c for c in choices.columns}),
+            #     override_choices.rename(columns={c: 'override_' + c for c in choices.columns})]
+            # )
+            # self.write_table(df=bundle_df, table_name='override_choices', append=True)
+            #
+            # # print(choices)
+            # # print(override_choices)
+            # # bug
+            #
+            # return override_choices
         else:
             raise RuntimeError("get_override_choices does not grok choice data type")
 

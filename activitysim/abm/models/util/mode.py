@@ -34,6 +34,7 @@ def run_tour_mode_choice_simulate(
     """
 
     coefficients = simulate.get_segment_coefficients(model_settings, tour_purpose)
+
     spec = simulate.eval_coefficients(spec, coefficients)
 
     locals_dict = {}

@@ -129,7 +129,7 @@ def preload_injectables():
 
     # default ActivitySim table names and indices
     if table_list is None:
-        logger.warn(
+        logger.warning(
             "No 'input_table_list' found in settings. This will be a "
             "required setting in upcoming versions of ActivitySim.")
 

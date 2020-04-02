@@ -9,7 +9,7 @@ import os
 import logging
 
 import pandas as pd
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 import pytest
 import yaml
 
@@ -68,13 +68,16 @@ def close_handlers():
 
 def inject_settings(configs_dir, **kwargs):
 
-    with open(os.path.join(configs_dir, 'settings.yaml')) as f:
-        settings = yaml.load(f, Loader=yaml.SafeLoader)
+    # always backstop with example/configs
+    example_configs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'example', 'configs')
+    inject.add_injectable('configs_dir', ['configs', example_configs_dir])
 
-        for k in kwargs:
-            settings[k] = kwargs[k]
+    settings = config.read_settings_file('settings.yaml', mandatory=True)
 
-        inject.add_injectable("settings", settings)
+    for k in kwargs:
+        settings[k] = kwargs[k]
+
+    inject.add_injectable("settings", settings)
 
     return settings
 
@@ -319,7 +322,7 @@ def get_trace_csv(file_name):
     return df
 
 
-EXPECT_TOUR_COUNT = 205
+EXPECT_TOUR_COUNT = 201
 
 
 def regress_tour_modes(tours_df):
@@ -334,13 +337,13 @@ def regress_tour_modes(tours_df):
 
     """
                  tour_mode  person_id tour_type  tour_num  tour_category
-    tour_id
-    13327106  SHARED3FREE     325051  othdiscr         1          joint
+    tour_id                                                            
+    13327106         WALK     325051  othdiscr         1          joint
     13327130         WALK     325051      work         1      mandatory
-    13327131  SHARED2FREE     325051      work         2      mandatory
-    13327155         WALK     325052     maint         1         atwork
-    13327171         WALK     325052      work         1      mandatory
-    13327138         WALK     325052    eatout         1  non_mandatory
+    13327131  SHARED3FREE     325051      work         2      mandatory
+    13327132         WALK     325052  business         1         atwork
+    13327171     WALK_LOC     325052      work         1      mandatory
+    13327160         WALK     325052  othmaint         1  non_mandatory
     """
 
     EXPECT_PERSON_IDS = [
@@ -356,17 +359,17 @@ def regress_tour_modes(tours_df):
         'othdiscr',
         'work',
         'work',
-        'maint',
+        'business',
         'work',
-        'eatout',
+        'othmaint',
         ]
 
     EXPECT_MODES = [
+        'WALK',
+        'WALK',
         'SHARED3FREE',
         'WALK',
-        'DRIVEALONEFREE',
-        'WALK',
-        'WALK',
+        'WALK_LOC',
         'WALK',
         ]
 

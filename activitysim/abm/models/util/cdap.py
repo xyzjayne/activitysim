@@ -857,8 +857,6 @@ def _run_cdap(
 
     persons['cdap_activity'] = person_choices
 
-    cdap_results = persons[['cdap_rank', 'cdap_activity']]
-
     # if DUMP:
     #     tracing.trace_df(hh_activity_choices, '%s.DUMP.hh_activity_choices' % trace_label,
     #                      transpose=False, slicer='NONE')
@@ -867,8 +865,7 @@ def _run_cdap(
 
     chunk.log_df(trace_label, 'persons', persons)
 
-    # return dataframe with two columns
-    return cdap_results
+    return persons.cdap_activity
 
 
 def calc_rows_per_chunk(chunk_size, choosers, trace_label=None):

@@ -59,7 +59,8 @@ def uniquify_spec_index(spec):
     assert spec.index.is_unique
 
 
-def read_model_alts(file_path, set_index=None):
+def read_model_alts(file_name, set_index=None):
+    file_path = config.config_file_path(file_name)
     df = pd.read_csv(file_path, comment='#')
     if set_index:
         df.set_index(set_index, inplace=True)
@@ -140,28 +141,9 @@ def read_model_spec(model_settings=None, tag='SPEC', file_name=None):
     return spec
 
 
-def read_model_coeffecients(model_settings):
+def read_model_coefficients(model_settings):
     """
-    Read CSV model coefficients into a Pandas DataFrame
-
-    file_path : str   absolute or relative path to file
-
-    The CSV is expected to have columns for component descriptions
-    and expressions, plus one or more alternatives.
-
-    The CSV is required to have a header with column names. For example:
-
-        coefficient_name,alt0,alt1,alt2
-
-    Parameters
-    ----------
-    model_settings : dict
-        name of spec_file is in model_settings['SPEC'] and file is relative to configs
-
-    Returns
-    -------
-    coefficients : pandas.DataFrame
-
+    FIXME - need docstring
     """
 
     assert 'COEFFICIENTS' in model_settings, \
@@ -174,14 +156,39 @@ def read_model_coeffecients(model_settings):
 
     return coefficients
 
+def read_model_coefficient_template(model_settings):
+    """
+    FIXME - need docstring
+    """
 
-def get_segment_coefficients(model_settings, segment_name=None):
-    coefficients_df = read_model_coeffecients(model_settings)
-    if segment_name is None:
-        assert(len(coefficients_df.columns) == 1)
-        coefficients_col = coefficients_df[0]
-    else:
-        coefficients_col = coefficients_df[segment_name]
+    assert 'COEFFICIENT_TEMPLATE' in model_settings, \
+        "'COEFFICIENT_TEMPLATE' not in model_settings in %s" % model_settings.get('source_file_paths')
+
+    coeffs_file_name = model_settings['COEFFICIENT_TEMPLATE']
+
+    file_path = config.config_file_path(coeffs_file_name)
+    template =  pd.read_csv(file_path, comment='#', index_col='coefficient_name')
+
+    return template
+
+def get_segment_coefficients(model_settings, segment_name):
+    """
+    FIXME - need docstring
+    """
+
+    coefficients_df = read_model_coefficients(model_settings)
+    template_df = read_model_coefficient_template(model_settings)
+
+    # for c in template_df.columns:
+    #     coefficients_df[c] = template_df[c].map(coefficients_df.value)
+    #
+    # if segment_name is None:
+    #     assert(len(coefficients_df.columns) == 1)
+    #     coefficients_col = coefficients_df[0]
+    # else:
+    #     coefficients_col = coefficients_df[segment_name]
+
+    coefficients_col = template_df[segment_name].map(coefficients_df.value)
 
     return coefficients_col.to_dict()
 
@@ -276,7 +283,6 @@ def eval_utilities(spec, choosers, locals_d=None, trace_label=None, have_trace_t
             raise err
 
     if estimation_hook is not None:
-
         df = pd.DataFrame(
             data=expression_values.transpose(),
             index=choosers.index,

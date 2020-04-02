@@ -8,7 +8,7 @@ install_aliases()  # noqa: E402
 import os
 
 import pandas as pd
-import pandas.util.testing as pdt
+import pandas.testing as pdt
 
 from activitysim.core import tracing
 from activitysim.core import pipeline
@@ -69,8 +69,9 @@ def regress_mini_auto():
 def test_mp_run():
 
     mp_configs_dir = os.path.join(os.path.dirname(__file__), 'configs_mp')
-    configs_dir = os.path.join(os.path.dirname(__file__), 'configs')
-    inject.add_injectable('configs_dir', [mp_configs_dir, configs_dir])
+    test_configs_dir = os.path.join(os.path.dirname(__file__), 'configs')
+    example_configs_dir = os.path.join(os.path.dirname(__file__), '..', '..', '..', 'example', 'configs')
+    inject.add_injectable('configs_dir', [mp_configs_dir, test_configs_dir, example_configs_dir])
 
     output_dir = os.path.join(os.path.dirname(__file__), 'output')
     inject.add_injectable("output_dir", output_dir)

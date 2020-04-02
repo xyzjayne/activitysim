@@ -50,7 +50,7 @@ def free_parking(
 
 
     model_spec = simulate.read_model_spec(model_settings=model_settings)
-    coefficients_df = simulate.read_model_coeffecients(model_settings)
+    coefficients_df = simulate.read_model_coefficients(model_settings)
     model_spec = simulate.eval_coefficients(model_spec, coefficients_df)
 
     nest_spec = config.get_logit_model_settings(model_settings)

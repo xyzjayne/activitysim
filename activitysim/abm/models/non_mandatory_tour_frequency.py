@@ -148,15 +148,12 @@ def non_mandatory_tour_frequency(persons, persons_merged,
     model_settings = config.read_model_settings('non_mandatory_tour_frequency.yaml')
     model_spec = simulate.read_model_spec(file_name='non_mandatory_tour_frequency.csv')
 
-    alternatives = simulate.read_model_alts(
-        config.config_file_path('non_mandatory_tour_frequency_alternatives.csv'),
-        set_index=None)
-
-    choosers = persons_merged.to_frame()
-
     # FIXME kind of tacky both that we know to add this here and del it below
     # 'tot_tours' is used in model_spec expressions
+    alternatives = simulate.read_model_alts('non_mandatory_tour_frequency_alternatives.csv', set_index=None)
     alternatives['tot_tours'] = alternatives.sum(axis=1)
+
+    choosers = persons_merged.to_frame()
 
     # - preprocessor
     preprocessor_settings = model_settings.get('preprocessor', None)

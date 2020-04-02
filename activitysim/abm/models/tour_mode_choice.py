@@ -8,6 +8,7 @@ install_aliases()  # noqa: E402
 import logging
 
 import pandas as pd
+import numpy as np
 
 from activitysim.core import tracing
 from activitysim.core import config
@@ -27,6 +28,47 @@ Tour mode choice is run for all tours to determine the transportation mode that
 will be used for the tour
 """
 
+def write_coefficient_template(model_settings):
+    coefficients = simulate.read_model_coefficients(model_settings=model_settings)
+
+    coefficients = coefficients.transpose()
+    coefficients.columns.name=None
+
+    template = coefficients.copy()
+
+    coef_names = []
+    coef_values = []
+
+    for c in coefficients.columns:
+
+        values = coefficients[c]
+        unique_values = values.unique()
+
+        for uv in unique_values:
+
+            if len(unique_values) == 1:
+                uv_coef_name = c + '_all'
+            else:
+                uv_coef_name = c + '_' + '_'.join(values[values == uv].index.values)
+
+            coef_names.append(uv_coef_name)
+            coef_values.append(uv)
+
+            template[c] = template[c].where(values != uv, uv_coef_name)
+
+    refactored_coefficients = pd.DataFrame({'coefficient_name': coef_names,  'value': coef_values})
+    refactored_coefficients.value = refactored_coefficients.value.astype(np.float32)
+    print(refactored_coefficients)
+
+    template = template.transpose()
+    template.to_csv(
+        config.output_file_path('tour_mode_choice_coefficients_template.csv'),
+        mode='w', index=True, header=True)
+
+    refactored_coefficients.to_csv(
+        config.output_file_path('tour_mode_choice_refactored_coefficients.csv'),
+        mode='w', index=False, header=True)
+
 
 @inject.step()
 def tour_mode_choice_simulate(tours, persons_merged,
@@ -39,6 +81,11 @@ def tour_mode_choice_simulate(tours, persons_merged,
     trace_label = 'tour_mode_choice'
     model_settings = config.read_model_settings('tour_mode_choice.yaml')
     spec = simulate.read_model_spec(model_settings=model_settings)
+
+    #############
+    # write_coefficient_template(model_settings)
+    # exit()
+    #############
 
     primary_tours = tours.to_frame()
 
@@ -79,7 +126,8 @@ def tour_mode_choice_simulate(tours, persons_merged,
     }
 
     if estimation.manager.begin_estimation('tour_mode_choice'):
-        estimation.manager.write_coefficients(simulate.read_model_coeffecients(model_settings=model_settings))
+        estimation.manager.write_coefficients(simulate.read_model_coefficients(model_settings=model_settings))
+        estimation.manager.write_coefficients_template(simulate.read_model_coefficient_template(model_settings))
         estimation.manager.write_spec(model_settings)
         estimation.manager.write_model_settings(model_settings, 'tour_mode_choice.yaml')
         # FIXME run_tour_mode_choice_simulate writes choosers post-annotation
@@ -115,6 +163,8 @@ def tour_mode_choice_simulate(tours, persons_merged,
 
     if estimation.manager.estimating:
         estimation.manager.write_choices(choices)
+        #choices = estimation.manager.get_override_choices(choices)
+        estimation.manager.end_estimation()
 
     tracing.print_summary('tour_mode_choice_simulate all tour type choices',
                           choices, value_counts=True)
@@ -137,7 +187,5 @@ def tour_mode_choice_simulate(tours, persons_merged,
                          index_label='tour_id',
                          warn_if_empty=True)
 
-    if estimation.manager.estimating:
-        estimation.manager.end_estimation()
 
 

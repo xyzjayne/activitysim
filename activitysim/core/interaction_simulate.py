@@ -98,9 +98,6 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows, esti
     utilities = pd.DataFrame({'utility': 0.0}, index=df.index)
     no_variability = has_missing_vals = 0
 
-    print(spec)
-    #bug
-
     if estimation_hook is not None:
         #expression_values_df = pd.DataFrame(index=df.index)
         #expression_values_df.index.name = df.index.name
@@ -120,11 +117,11 @@ def eval_interaction_utilities(spec, df, locals_d, trace_label, trace_rows, esti
     for expr, label, coefficient in zip(exprs, labels, spec.iloc[:, 0]):
         try:
 
-            print("expr, label, coefficient", expr, label, coefficient)
+            #print("expr, label, coefficient", expr, label, coefficient)
             # - allow temps of form _od_DIST@od_skim['DIST']
             if expr.startswith('_'):
 
-                print("expr.startswith('_')", expr, label, coefficient)
+                #print("expr.startswith('_')", expr, label, coefficient)
 
                 target = expr[:expr.index('@')]
                 rhs = expr[expr.index('@') + 1:]
