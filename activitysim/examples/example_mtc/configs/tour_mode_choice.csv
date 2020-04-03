@@ -261,13 +261,13 @@ Taxi - Fare,@df.c_cost * (Taxi_baseFare * 2 + (odt_skims['HOV2TOLL_DIST'] + dot_
 TNC Single - In-vehicle time,@c_ivt * (odt_skims['HOV2TOLL_TIME'] + dot_skims['HOV2TOLL_TIME']),,,,,,,,,,,,,,,,,,,,1,
 TNC Single - Wait time,@c_ivt * 1.5 * df.totalWaitSingleTNC,,,,,,,,,,,,,,,,,,,,1,
 TNC Single - Tolls,@df.c_cost * (odt_skims['HOV2TOLL_VTOLL'] + dot_skims['HOV2TOLL_VTOLL']),,,,,,,,,,,,,,,,,,,,1,
-TNC Single - Bridge toll,@df.c_cost * (odt_skims['HOV2TOLL_BTOLL'] + dot_skims['HOV2TOLL_BTOLL']),,,,,,,,,,,,,,,,,,,,1,
+TNC Single - Bridge toll,@df.c_cost * (odt_skims['HOV2TOLL_BTOLL'] + odr_skims['HOV2TOLL_BTOLL'] + dot_skims['HOV2TOLL_BTOLL'] + dor_skims['HOV2TOLL_BTOLL']),,,,,,,,,,,,,,,,,,,,1,
 TNC Single - Cost,"@df.c_cost * np.maximum(TNC_single_baseFare * 2 + (odt_skims['HOV2TOLL_DIST'] + dot_skims['HOV2TOLL_DIST']) * TNC_single_costPerMile + (odt_skims['HOV2TOLL_TIME'] + dot_skims['HOV2TOLL_TIME']) * TNC_single_costPerMinute, TNC_single_costMinimum) * 100",,,,,,,,,,,,,,,,,,,,1,
 #TNC Shared,,,,,,,,,,,,,,,,,,,,,,
 TNC Shared - In-vehicle time,@c_ivt * (odt_skims['HOV2TOLL_TIME'] + dot_skims['HOV2TOLL_TIME']) * TNC_shared_IVTFactor,,,,,,,,,,,,,,,,,,,,,1
 TNC Shared - Wait time,@c_ivt  * 1.5 * df.totalWaitSharedTNC,,,,,,,,,,,,,,,,,,,,,1
 TNC Shared - Tolls,@df.c_cost * (odt_skims['HOV2TOLL_VTOLL'] + dot_skims['HOV2TOLL_VTOLL']),,,,,,,,,,,,,,,,,,,,,1
-TNC Shared - Bridge toll,@df.c_cost * (odt_skims['HOV2TOLL_BTOLL'] + dot_skims['HOV2TOLL_BTOLL']),,,,,,,,,,,,,,,,,,,,,1
+TNC Shared - Bridge toll,@df.c_cost * (odt_skims['HOV2TOLL_BTOLL'] + odr_skims['HOV2TOLL_BTOLL'] + dot_skims['HOV2TOLL_BTOLL'] + dor_skims['HOV2TOLL_BTOLL']),,,,,,,,,,,,,,,,,,,,,1
 TNC Shared - Cost,"@df.c_cost * np.maximum(TNC_shared_baseFare * 2 + (odt_skims['HOV2TOLL_DIST'] + dot_skims['HOV2TOLL_DIST']) * TNC_shared_costPerMile + (odt_skims['HOV2TOLL_TIME'] + dot_skims['HOV2TOLL_TIME']) * TNC_shared_costPerMinute, TNC_shared_costMinimum) * 100",,,,,,,,,,,,,,,,,,,,,1
 #indiv tour ASCs,,,,,,,,,,,,,,,,,,,,,,
 Walk ASC - Zero auto,@walk_ASC_no_auto * (df.is_indiv & (df.auto_ownership == 0)),,,,,,,1,,,,,,,,,,,,,,
