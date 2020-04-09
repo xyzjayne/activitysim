@@ -865,7 +865,7 @@ def _run_cdap(
 
     chunk.log_df(trace_label, 'persons', persons)
 
-    return persons.cdap_activity
+    return persons[['cdap_rank', 'cdap_activity']]
 
 
 def calc_rows_per_chunk(chunk_size, choosers, trace_label=None):
@@ -894,8 +894,7 @@ def run_cdap(
         cdap_interaction_coefficients,
         cdap_fixed_relative_proportions,
         locals_d,
-        chunk_size=0, trace_hh_id=None, trace_label=None,
-        estimation_hook=None):
+        chunk_size=0, trace_hh_id=None, trace_label=None):
     """
     Choose individual activity patterns for persons.
 
@@ -950,21 +949,29 @@ def run_cdap(
 
         chunk.log_open(chunk_trace_label, chunk_size, effective_chunk_size)
 
-        choices = _run_cdap(persons_chunk,
-                            cdap_indiv_spec,
-                            cdap_interaction_coefficients,
-                            cdap_fixed_relative_proportions,
-                            locals_d,
-                            trace_hh_id, chunk_trace_label)
+        cdap_results = \
+            _run_cdap(persons_chunk,
+                      cdap_indiv_spec,
+                      cdap_interaction_coefficients,
+                      cdap_fixed_relative_proportions,
+                      locals_d,
+                      trace_hh_id, chunk_trace_label)
 
         chunk.log_close(chunk_trace_label)
 
-        result_list.append(choices)
+        result_list.append(cdap_results)
 
     # FIXME: this will require 2X RAM
     # if necessary, could append to hdf5 store on disk:
     # http://pandas.pydata.org/pandas-docs/stable/io.html#id2
     if len(result_list) > 1:
-        choices = pd.concat(result_list)
+        cdap_results = pd.concat(result_list)
 
-    return choices
+    if trace_hh_id:
+
+        tracing.trace_df(cdap_results,
+                         label="cdap",
+                         columns=['cdap_rank', 'cdap_activity'],
+                         warn_if_empty=True)
+
+    return cdap_results['cdap_activity']

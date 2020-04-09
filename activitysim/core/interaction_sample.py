@@ -236,7 +236,6 @@ def _interaction_sample(
     else:
         trace_rows = trace_ids = None
 
-
     # interaction_utilities is a df with one utility column and one row per interaction_df row
     interaction_utilities, trace_eval_results \
         = eval_interaction_utilities(spec, interaction_df, locals_d, trace_label, trace_rows)
@@ -291,10 +290,10 @@ def _interaction_sample(
         index_name = probs.index.name
         choices_df = \
             pd.melt(probs.reset_index(), id_vars=[index_name])\
-                .sort_values(by=index_name, kind='mergesort')\
-                .set_index(index_name)\
-                .rename(columns={'value': 'prob'})\
-                .drop(columns='variable')
+            .sort_values(by=index_name, kind='mergesort')\
+            .set_index(index_name)\
+            .rename(columns={'value': 'prob'})\
+            .drop(columns='variable')
 
         choices_df['pick_count'] = 1
         choices_df.insert(0, alt_col_name, np.tile(alternatives.index.values, len(choosers.index)))
@@ -451,7 +450,6 @@ def interaction_sample(
     assert alt_col_name is not None
     assert choosers.index.is_monotonic
 
-    #assert sample_size > 0
     sample_size = min(sample_size, len(alternatives.index))
 
     rows_per_chunk, effective_chunk_size = \

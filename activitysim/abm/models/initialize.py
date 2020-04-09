@@ -137,7 +137,7 @@ def preload_injectables():
         new_settings['input_table_list'] = DEFAULT_TABLE_LIST
         inject.add_injectable('settings', new_settings)
 
-    #bug
+    # FIXME undocumented feature
     if config.setting('write_raw_tables'):
 
         # write raw input tables as csv (before annotation)
@@ -148,10 +148,9 @@ def preload_injectables():
         table_names = [t['tablename'] for t in table_list]
         for t in table_names:
             df = inject.get_table(t).to_frame()
-            if t=='households':
+            if t == 'households':
                 df.drop(columns='chunk_id', inplace=True)
             df.to_csv(os.path.join(csv_dir, '%s.csv' % t), index=True)
-    #bug
 
     t0 = tracing.print_elapsed_time()
 

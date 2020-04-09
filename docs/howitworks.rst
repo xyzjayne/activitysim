@@ -267,7 +267,7 @@ calulcation settings, time periods for skim lookups, shadow pricing settings, et
      iterate_location_choice(
         model_settings,
         persons_merged, persons, households,
-        skim_dict, skim_stack,
+        skim_dict, skim_stack, estimator,
         chunk_size, trace_hh_id, locutor, trace_label
 
 

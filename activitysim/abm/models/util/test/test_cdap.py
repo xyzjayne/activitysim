@@ -31,7 +31,7 @@ def people(data_dir):
 
 @pytest.fixture(scope='module')
 def cdap_indiv_and_hhsize1(configs_dir):
-    return simulate.read_model_spec(file_name='cdap_indiv_and_hhsize1.csv', spec_dir=configs_dir)
+    return simulate.read_model_spec('cdap_indiv_and_hhsize1.csv', spec_dir=configs_dir)
 
 
 @pytest.fixture(scope='module')

@@ -49,8 +49,6 @@ coef_num_under_16_not_at_school_school2,0.0866
 coef_num_under_16_not_at_school_work_and_school,-0.1955
 coef_home_urban_work1,-0.2831
 coef_home_urban_work2,0.2308
-#FIXME - coef_home_urban_work2_MAYBE_A_TYPO,
-coef_home_urban_work2_MAYBE_A_TYPO,0.2380
 coef_home_urban_school1,-0.1361
 coef_home_urban_school2,0.317
 coef_home_urban_work_and_school,-0.3509

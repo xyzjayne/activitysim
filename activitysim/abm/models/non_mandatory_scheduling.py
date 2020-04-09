@@ -7,6 +7,8 @@ install_aliases()  # noqa: E402
 
 import logging
 
+import pandas as pd
+
 from activitysim.core import tracing
 from activitysim.core import config
 from activitysim.core import inject
@@ -36,8 +38,7 @@ def non_mandatory_tour_scheduling(tours,
     trace_label = 'non_mandatory_tour_scheduling'
     model_settings = config.read_model_settings('non_mandatory_tour_scheduling.yaml')
 
-    model_spec = simulate.read_model_spec(file_name='tour_scheduling_nonmandatory.csv')
-    segment_col = None  # no segmentation of model_spec
+    model_spec = simulate.read_model_spec('tour_scheduling_nonmandatory.csv')
 
     tours = tours.to_frame()
     non_mandatory_tours = tours[tours.tour_category == 'non_mandatory']
@@ -67,16 +68,27 @@ def non_mandatory_tour_scheduling(tours,
             locals_dict=locals_d,
             trace_label=trace_label)
 
-    tdd_choices, timetable = vectorize_tour_scheduling(
+    # - spec dict segmented by primary_purpose
+    spec_info = {'spec': model_spec}
+
+    timetable = inject.get_injectable("timetable")
+
+    choices = vectorize_tour_scheduling(
         non_mandatory_tours, persons_merged,
-        tdd_alts, model_spec, segment_col,
+        tdd_alts, timetable,
+        tour_segments=spec_info,
+        tour_segment_col=None,
         model_settings=model_settings,
         chunk_size=chunk_size,
         trace_label=trace_label)
 
     timetable.replace_table()
 
-    assign_in_place(tours, tdd_choices)
+    # choices are tdd alternative ids
+    # we want to add start, end, and duration columns to tours, which we have in tdd_alts table
+    choices = pd.merge(choices.to_frame('tdd'), tdd_alts, left_on=['tdd'], right_index=True, how='left')
+
+    assign_in_place(tours, choices)
     pipeline.replace_table("tours", tours)
 
     # updated df for tracing

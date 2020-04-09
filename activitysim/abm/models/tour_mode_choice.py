@@ -28,11 +28,12 @@ Tour mode choice is run for all tours to determine the transportation mode that
 will be used for the tour
 """
 
+
 def write_coefficient_template(model_settings):
     coefficients = simulate.read_model_coefficients(model_settings=model_settings)
 
     coefficients = coefficients.transpose()
-    coefficients.columns.name=None
+    coefficients.columns.name = None
 
     template = coefficients.copy()
 
@@ -80,7 +81,7 @@ def tour_mode_choice_simulate(tours, persons_merged,
     """
     trace_label = 'tour_mode_choice'
     model_settings = config.read_model_settings('tour_mode_choice.yaml')
-    spec = simulate.read_model_spec(model_settings=model_settings)
+    spec = simulate.read_model_spec(model_settings['SPEC'])
 
     #############
     # write_coefficient_template(model_settings)
@@ -125,11 +126,12 @@ def tour_mode_choice_simulate(tours, persons_merged,
         'in_time_col_name': in_time_col_name
     }
 
-    if estimation.manager.begin_estimation('tour_mode_choice'):
-        estimation.manager.write_coefficients(simulate.read_model_coefficients(model_settings=model_settings))
-        estimation.manager.write_coefficients_template(simulate.read_model_coefficient_template(model_settings))
-        estimation.manager.write_spec(model_settings)
-        estimation.manager.write_model_settings(model_settings, 'tour_mode_choice.yaml')
+    estimator = estimation.manager.begin_estimation('tour_mode_choice')
+    if estimator:
+        estimator.write_coefficients(simulate.read_model_coefficients(model_settings=model_settings))
+        estimator.write_coefficients_template(simulate.read_model_coefficient_template(model_settings))
+        estimator.write_spec(model_settings)
+        estimator.write_model_settings(model_settings, 'tour_mode_choice.yaml')
         # FIXME run_tour_mode_choice_simulate writes choosers post-annotation
 
     choices_list = []
@@ -147,6 +149,7 @@ def tour_mode_choice_simulate(tours, persons_merged,
             skims=skims,
             constants=constants,
             nest_spec=nest_spec,
+            estimator=estimator,
             chunk_size=chunk_size,
             trace_label=tracing.extend_trace_label(trace_label, tour_type),
             trace_choice_name='tour_mode_choice')
@@ -161,10 +164,10 @@ def tour_mode_choice_simulate(tours, persons_merged,
 
     choices = pd.concat(choices_list)
 
-    if estimation.manager.estimating:
-        estimation.manager.write_choices(choices)
-        #choices = estimation.manager.get_override_choices(choices)
-        estimation.manager.end_estimation()
+    if estimator:
+        estimator.write_choices(choices)
+        choices = estimator.get_override_choices(choices)
+        estimator.end_estimation()
 
     tracing.print_summary('tour_mode_choice_simulate all tour type choices',
                           choices, value_counts=True)
@@ -186,6 +189,3 @@ def tour_mode_choice_simulate(tours, persons_merged,
                          slicer='tour_id',
                          index_label='tour_id',
                          warn_if_empty=True)
-
-
-

@@ -146,7 +146,7 @@ def non_mandatory_tour_frequency(persons, persons_merged,
 
     trace_label = 'non_mandatory_tour_frequency'
     model_settings = config.read_model_settings('non_mandatory_tour_frequency.yaml')
-    model_spec = simulate.read_model_spec(file_name='non_mandatory_tour_frequency.csv')
+    model_spec = simulate.read_model_spec('non_mandatory_tour_frequency.csv')
 
     # FIXME kind of tacky both that we know to add this here and del it below
     # 'tot_tours' is used in model_spec expressions
@@ -243,7 +243,7 @@ def non_mandatory_tour_frequency(persons, persons_merged,
     extended_tour_count = tour_counts.sum().sum()
 
     logger.info("extend_tour_counts increased nmtf tour count by %s from %s to %s" %
-                 (extended_tour_count - prev_tour_count, prev_tour_count, extended_tour_count))
+                (extended_tour_count - prev_tour_count, prev_tour_count, extended_tour_count))
 
     # - create the non_mandatory tours
     non_mandatory_tours = process_non_mandatory_tours(persons, tour_counts)

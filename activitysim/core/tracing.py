@@ -511,6 +511,7 @@ def hh_id_for_chooser(id, choosers):
 
     return hh_id
 
+
 def trace_id_for_chooser(id, choosers):
     """
 

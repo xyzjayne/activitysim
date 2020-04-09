@@ -18,12 +18,14 @@ spec, which is more complicated than the other specs, into something that
 looks like the other specs.
 """
 
+
 def run_tour_mode_choice_simulate(
         choosers,
         spec, tour_purpose, model_settings,
         skims,
         constants,
         nest_spec,
+        estimator,
         chunk_size,
         trace_label=None, trace_choice_name=None):
     """
@@ -51,12 +53,9 @@ def run_tour_mode_choice_simulate(
         choosers, locals_dict, skims,
         model_settings, trace_label)
 
-    if estimation.manager.estimating:
+    if estimator:
         # write choosers after annotation
-        estimation.manager.write_choosers(choosers)
-        estimation_hook = estimation.write_hook
-    else:
-        estimation_hook = None
+        estimator.write_choosers(choosers)
 
     choices = simulate.simple_simulate(
         choosers=choosers,
@@ -67,7 +66,7 @@ def run_tour_mode_choice_simulate(
         chunk_size=chunk_size,
         trace_label=trace_label,
         trace_choice_name=trace_choice_name,
-        estimation_hook=estimation_hook)
+        estimator=estimator)
 
     alts = spec.columns
     choices = choices.map(dict(list(zip(list(range(len(alts))), alts))))

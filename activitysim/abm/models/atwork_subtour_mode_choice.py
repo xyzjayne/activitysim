@@ -39,7 +39,7 @@ def atwork_subtour_mode_choice(
 
     model_settings = config.read_model_settings('tour_mode_choice.yaml')
 
-    spec = simulate.read_model_spec(model_settings=model_settings)
+    spec = simulate.read_model_spec(model_settings['SPEC'])
 
     tours = tours.to_frame()
     subtours = tours[tours.tour_category == 'atwork']
@@ -88,6 +88,7 @@ def atwork_subtour_mode_choice(
         skims=skims,
         constants=constants,
         nest_spec=nest_spec,
+        estimator=None,
         chunk_size=chunk_size,
         trace_label=trace_label,
         trace_choice_name='tour_mode_choice')

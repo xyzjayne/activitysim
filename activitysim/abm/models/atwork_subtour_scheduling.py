@@ -39,7 +39,8 @@ def atwork_subtour_scheduling(
 
     trace_label = 'atwork_subtour_scheduling'
     model_settings = config.read_model_settings('tour_scheduling_atwork.yaml')
-    model_spec = simulate.read_model_spec(file_name='tour_scheduling_atwork.csv')
+
+    model_spec = simulate.read_model_spec('tour_scheduling_atwork.csv')
 
     persons_merged = persons_merged.to_frame()
 

@@ -78,21 +78,21 @@ def mandatory_tour_frequency(persons_merged,
             locals_dict=locals_dict,
             trace_label=trace_label)
 
-    model_spec = simulate.read_model_spec(model_settings=model_settings)
+    model_spec = simulate.read_model_spec(model_settings['SPEC'])
     coefficients_df = simulate.read_model_coefficients(model_settings)
     model_spec = simulate.eval_coefficients(model_spec, coefficients_df)
 
     nest_spec = config.get_logit_model_settings(model_settings)
     constants = config.get_model_constants(model_settings)
 
-    if estimation.manager.begin_estimation('mandatory_tour_frequency'):
-        estimation.manager.write_model_settings(model_settings, model_settings_file_name)
-        estimation.manager.write_spec(model_settings)
-        estimation.manager.write_coefficients(coefficients_df)
-        estimation.manager.write_choosers(choosers)
-        estimation_hook = estimation.write_hook
-    else:
-        estimation_hook = None
+    estimator = estimation.manager.begin_estimation('mandatory_tour_frequency')
+    if estimator:
+
+        estimator.write_table(model_spec, 'evaled_model_spec', append=False)
+        estimator.write_model_settings(model_settings, model_settings_file_name)
+        estimator.write_spec(model_settings)
+        estimator.write_coefficients(coefficients_df)
+        estimator.write_choosers(choosers)
 
     choices = simulate.simple_simulate(
         choosers=choosers,
@@ -102,15 +102,15 @@ def mandatory_tour_frequency(persons_merged,
         chunk_size=chunk_size,
         trace_label=trace_label,
         trace_choice_name='mandatory_tour_frequency',
-        estimation_hook=estimation_hook)
+        estimator=estimator)
 
     # convert indexes to alternative names
     choices = pd.Series(model_spec.columns[choices.values], index=choices.index)
 
-    if estimation.manager.estimating:
-        estimation.manager.write_choices(choices)
-        choices = estimation.manager.get_override_choices(choices)
-        estimation.manager.end_estimation()
+    if estimator:
+        estimator.write_choices(choices)
+        choices = estimator.get_override_choices(choices)
+        estimator.end_estimation()
 
     # - create mandatory tours
     """
@@ -118,10 +118,7 @@ def mandatory_tour_frequency(persons_merged,
     alternatives into an actual dataframe of tours.  Ending format is
     the same as got non_mandatory_tours except trip types are "work" and "school"
     """
-
     alternatives = simulate.read_model_alts('mandatory_tour_frequency_alternatives.csv', set_index='alt')
-
-    #choosers['mandatory_tour_frequency'] = choices.reindex(persons_merged.local.index)
     choosers['mandatory_tour_frequency'] = choices.reindex(choosers.index)
 
     mandatory_tours = process_mandatory_tours(

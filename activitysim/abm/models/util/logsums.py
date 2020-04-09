@@ -64,7 +64,7 @@ def compute_logsums(choosers,
 
     trace_label = tracing.extend_trace_label(trace_label, 'compute_logsums')
 
-    logsum_spec = simulate.read_model_spec(logsum_settings)
+    logsum_spec = simulate.read_model_spec(logsum_settings['SPEC'])
 
     coefficients = simulate.get_segment_coefficients(logsum_settings, tour_purpose)
     logsum_spec = simulate.eval_coefficients(logsum_spec, coefficients)
@@ -101,7 +101,6 @@ def compute_logsums(choosers,
         'dest_col_name': dest_col_name
     }
 
-    #locals_dict = coefficients
     locals_dict = {}
     locals_dict.update(constants)
     locals_dict.update(skims)

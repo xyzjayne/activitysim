@@ -17,51 +17,16 @@ logger = logging.getLogger('estimation')
 
 ESTIMATION_SETTINGS_FILE_NAME = 'estimation.yaml'
 
-class EstimationManager(object):
 
-    def __init__(self):
+class Estimator(object):
 
-        self.settings_initialized = False
-        self.models = []
-        self.model_settings = {}
+    def __init__(self, model_name, model_settings):
 
-        # name of model we are currently estimating, or None if not estimating
-        self.estimating = None
-        self.tables = None
+        logger.info("Initialize Estimator for'%s'" % (model_name,))
 
-    def initialize_settings(self):
-        assert not self.settings_initialized
-        settings = config.read_model_settings(ESTIMATION_SETTINGS_FILE_NAME)
-        self.models = settings.get('models', [])
-        self.model_settings = settings.get('model_settings', {})
-        self.settings_initialized = True
-
-    def begin_estimation(self, model_name):
-        """
-        begin estimating of model_name is specified as model to estimate, otherwise return False
-
-        Parameters
-        ----------
-        model_name
-
-        Returns
-        -------
-
-        """
-        # load estimation settings file
-        if not self.settings_initialized:
-            self.initialize_settings()
-
-        # shouldn't already be estimating
-        assert self.estimating is None, \
-            "Cant begin estimating %s - already estimating %s" % (model_name, self.estimating)
-
-        if not model_name in self.models:
-            return False
-
-        # begin estimating model specified by model_name
-        self.estimating = model_name
-        logger.info("begin estimation '%s'" % (model_name,))
+        self.model_name = model_name
+        self.model_settings = model_settings
+        self.estimating = True
 
         # ensure the output data directory exists
         output_dir = self.data_directory()
@@ -79,28 +44,37 @@ class EstimationManager(object):
                 except Exception as e:
                     print(e)
 
-        assert model_name in self.model_settings, \
-            "No estimation settings for %s in %s." % (model_name, ESTIMATION_SETTINGS_FILE_NAME)
-
-        settings = self.model_settings[model_name]
-
         # FIXME - not required?
-        # assert 'override_choices' in settings, \
+        # assert 'override_choices' in self.model_settings, \
         #     "override_choices not found for %s in %s." % (model_name, ESTIMATION_SETTINGS_FILE_NAME)
 
-        self.omnibus_tables = settings.get('omnibus_tables', {})
-        self.omnibus_tables_append_columns = settings.get('omnibus_tables_append_columns', [])
+        self.omnibus_tables = self.model_settings.get('omnibus_tables', {})
+        self.omnibus_tables_append_columns = self.model_settings.get('omnibus_tables_append_columns', [])
         self.tables = {}
         self.tables_to_cache = [table_name for tables in self.omnibus_tables.values() for table_name in tables]
-        return True
+        self.alt_id_column_name = None
+
+    def log(self, msg, level=logging.INFO):
+        logger.log(level, "%s: %s" % (self.model_name, msg))
+
+    def set_alt_id(self, alt_id):
+        self.alt_id_column_name = alt_id
+
+    def get_alt_id(self):
+        assert self.alt_id_column_name is not None, \
+            "alt_id_column_name is None for %s did you forget to call set_alt_id()?" % (self.model_name, )
+        return self.alt_id_column_name
 
     def end_estimation(self):
 
         self.write_omnibus_table()
 
-        logger.info("end estimation '%s'" % (self.estimating,))
-        self.estimating = None
+        self.estimating = False
         self.tables = None
+
+        logger.info("end estimation '%s'" % (self.model_name,))
+
+        manager.release(self)
 
     def data_directory(self):
 
@@ -108,7 +82,7 @@ class EstimationManager(object):
         assert self.estimating
         data_bundle_dir = config.output_file_path('estimation_data_bundle')
 
-        return os.path.join(data_bundle_dir, self.estimating)
+        return os.path.join(data_bundle_dir, self.model_name)
 
     def file_path(self, table_name, file_type=None):
 
@@ -116,9 +90,9 @@ class EstimationManager(object):
         assert self.estimating
 
         if file_type:
-            file_name = "%s_%s.%s" % (self.estimating, table_name, file_type)
+            file_name = "%s_%s.%s" % (self.model_name, table_name, file_type)
         else:
-            file_name = "%s_%s" % (self.estimating, table_name)
+            file_name = "%s_%s" % (self.model_name, table_name)
 
         return os.path.join(self.data_directory(), file_name)
 
@@ -143,10 +117,10 @@ class EstimationManager(object):
 
         if table_name in self.tables_to_cache:
             cache_table(df, table_name, append)
-            logger.debug('write_table %s cache: %s' % (self.estimating, table_name))
+            logger.debug('write_table %s cache: %s' % (self.model_name, table_name))
         else:
             write_table(df, table_name, index, append)
-            logger.debug('write_table %s write: %s' % (self.estimating, table_name))
+            logger.debug('write_table %s write: %s' % (self.model_name, table_name))
 
     def write_omnibus_table(self):
 
@@ -168,8 +142,7 @@ class EstimationManager(object):
             df.sort_index(ascending=True, inplace=True, kind='mergesort')
             df.to_csv(file_path, mode='a', index=True, header=True)
 
-            logger.debug('write_omnibus_choosers %s write: %s' % (self.estimating, file_path))
-
+            logger.debug('write_omnibus_choosers %s write: %s' % (self.model_name, file_path))
 
     def write_dict(self, d, dict_name):
 
@@ -186,7 +159,6 @@ class EstimationManager(object):
 
         logger.debug("estimate.write_dict: %s" % file_path)
 
-
     def write_coefficients(self, coefficients_df, tag='coefficients'):
         assert self.estimating
         self.write_table(coefficients_df, tag, append=False)
@@ -199,7 +171,8 @@ class EstimationManager(object):
         self.write_table(choosers_df, 'choosers', append=True)
 
     def write_alternatives(self, alternatives_df):
-        self.write_table(self.melt_alternatives(alternatives_df, column_name='xxx'), 'alternatives', append=True)
+        alternatives_df = self.melt_alternatives(alternatives_df)
+        self.write_table(alternatives_df, 'alternatives', append=True)
 
     def write_choices(self, choices):
 
@@ -211,10 +184,8 @@ class EstimationManager(object):
             choices = choices.to_frame(name='model_choice')
         self.write_table(choices, 'choices', append=True)
 
-
     def write_constants(self, constants):
         self.write_dict(self, constants, 'model_constants')
-
 
     def write_nest_spec(self, nest_spec):
         self.write_dict(self, nest_spec, 'nest_spec')
@@ -227,36 +198,34 @@ class EstimationManager(object):
 
         shutil.copy(input_path, output_path)
 
-
     def write_model_settings(self, model_settings, settings_file_name):
 
         self.copy_model_settings(settings_file_name)
         if 'inherit_settings' in model_settings:
             self.write_dict(model_settings, 'inherited_model_settings')
 
+    def write_spec(self, model_settings=None, file_name=None, tag='SPEC'):
 
-    def write_spec(self, model_settings, tag='SPEC'):
+        if model_settings is not None:
+            assert file_name is None
+            file_name = model_settings[tag]
 
-        # FIXME  should also copy like write_model_settings (when possible?) to capture comment lines in csv?
-
-        # estimation.write_spec(simulate.read_model_spec(file_name=spec_file_name, tag='sample_spec')
-        spec_file_name = model_settings[tag]
-
-        # spec_df = simulate.read_model_spec(file_name=spec_file_name)
-        # write_table(spec_df, tag, append=False)
-
-        # if not spec_file_name.lower().endswith('.yaml'):
-        #     file_name = '%s.yaml' % (spec_file_name, )
-
-        input_path = config.config_file_path(spec_file_name)
+        input_path = config.config_file_path(file_name)
         output_path = self.file_path(table_name=tag, file_type='csv')
 
         shutil.copy(input_path, output_path)
 
         logger.debug("estimate.write_spec: %s" % output_path)
 
+    def melt_alternatives(self, df):
 
-    def melt_alternatives(self, df, column_name):
+        alt_id_name = self.alt_id_column_name
+
+        assert alt_id_name is not None, \
+            "alt_id not set. Did you forget to call set_alt_id()? (%s)" % self.model_name
+
+        assert alt_id_name in df, \
+            "alt_id_column_name '%s' not in alternatives table (%s)" % (alt_id_name, self.model_name)
 
         variable_column = 'variable'
 
@@ -270,7 +239,6 @@ class EstimationManager(object):
 
         # mergesort is the only stable sort, and we want the expressions to appear in original df column order
         index_name = df.index.name
-        alt_id_name = 'alt_dest'
         melt_df = pd.melt(df.reset_index(), id_vars=[index_name, alt_id_name]) \
             .sort_values(by=index_name, kind='mergesort') \
             .rename(columns={'variable': variable_column})
@@ -292,17 +260,12 @@ class EstimationManager(object):
 
         return melt_df
 
-    def write_hook(self, df, table_name):
+    def write_interaction_expression_values(self, df):
+        df = self.melt_alternatives(df)
+        self.write_table(df, 'interaction_expression_values', append=True)
 
-        if table_name == 'expression_values':
-            self.write_table(df, table_name, append=True)
-
-        elif table_name == 'interaction_expression_values':
-            df = self.melt_alternatives(df, column_name='utility_expression')
-            self.write_table(df, table_name, append=True)
-        else:
-            self.write_table(df, table_name)
-
+    def write_expression_values(self, df):
+        self.write_table(df, 'write_expression_values', append=True)
 
     def get_override_choices(self, choices):
         """
@@ -311,11 +274,11 @@ class EstimationManager(object):
         """
         assert self.estimating
 
-        choice_settings = self.model_settings.get(self.estimating).get('override_choices')
+        choice_settings = self.model_settings.get('override_choices')
 
         if choice_settings is None:
             logger.warning("estimation.get_override_choices - no override because no choice settings found for %s. ",
-                         self.estimating)
+                           self.model_name)
             return choices
 
         # read override_df table
@@ -330,47 +293,75 @@ class EstimationManager(object):
             override_choices = choices.to_frame('model_choice')
             override_choices['override_choice'] = reindex(survey_df[column_name], override_choices.index)
 
+            # shouldn't be any choices we can't override
+            if override_choices.override_choice.isna().any():
+                missing_override_choices = override_choices[override_choices.override_choice.isna()]
+                print("couldn't override choices for %s of %s choices\n" %
+                      (len(missing_override_choices), len(override_choices)))
+                print(missing_override_choices)
+                bug
+
             self.write_table(override_choices, 'override_choices', append=True)
             return override_choices['override_choice']
 
-        # elif isinstance(choices, pd.DataFrame):
-            # assert isinstance(choices, pd.DataFrame)
-            #
-            # column_names = choice_settings['column_name']
-            #
-            # # FIXME - column_names list not really needed, but nice documentation of requirements
-            # # should be same number of overrides as choice columns
-            # assert set(column_names) == set(choices.columns),\
-            #     "column_name list (%s) does not match choices columns (%s)" % (column_names, choices.columns)
-            #
-            # # expect choice column <column_name> in choices table
-            # assert set(column_names).issubset(set(survey_df.columns)),\
-            #     "Missing choices columns (%s) in verride table %s" % \
-            #     (set(column_names) - set(survey_df.columns), file_name)
-            #
-            # # copy in the overrides with desired column names
-            # override_choices = pd.DataFrame(index=choices.index)
-            # for c in column_names:
-            #     override_choices[c] = reindex(survey_df[c], override_choices.index)
-            #
-            # # write table with both 'modeled_' and the 'override_' columns
-            # bundle_df = pd.concat(
-            #     [choices.rename(columns={c: 'modeled_' + c for c in choices.columns}),
-            #     override_choices.rename(columns={c: 'override_' + c for c in choices.columns})]
-            # )
-            # self.write_table(df=bundle_df, table_name='override_choices', append=True)
-            #
-            # # print(choices)
-            # # print(override_choices)
-            # # bug
-            #
-            # return override_choices
         else:
             raise RuntimeError("get_override_choices does not grok choice data type")
 
 
+class EstimationManager(object):
+
+    def __init__(self):
+
+        self.settings_initialized = False
+        self.models = []
+        self.model_settings = {}
+        self.estimating = {}
+
+    def initialize_settings(self):
+        assert not self.settings_initialized
+        settings = config.read_model_settings(ESTIMATION_SETTINGS_FILE_NAME)
+        self.enabled = settings.get('enable', 'True')
+        self.models = settings.get('models', [])
+        self.model_settings = settings.get('model_settings', {})
+        self.settings_initialized = True
+
+    def begin_estimation(self, model_name):
+        """
+        begin estimating of model_name is specified as model to estimate, otherwise return False
+
+        Parameters
+        ----------
+        model_name
+
+        Returns
+        -------
+
+        """
+        # load estimation settings file
+        if not self.settings_initialized:
+            self.initialize_settings()
+
+        # global estimation setting
+        if not self.enabled:
+            return None
+
+        if model_name not in self.models:
+            return None
+
+        # can't estimate the same model simultaneously
+        assert model_name in self.model_settings, \
+            "Cant begin estimating %s - already estimating that model." % (model_name, )
+
+        assert model_name in self.model_settings, \
+            "No estimation settings for %s in %s." % (model_name, ESTIMATION_SETTINGS_FILE_NAME)
+
+        self.estimating[model_name] = Estimator(model_name, self.model_settings[model_name])
+
+        return self.estimating[model_name]
+
+    def release(self, estimator):
+
+        self.estimating.pop(estimator.model_name)
+
 
 manager = EstimationManager()
-
-def write_hook(df, table_name):
-    manager.write_hook(df, table_name)

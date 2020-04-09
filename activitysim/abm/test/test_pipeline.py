@@ -337,7 +337,7 @@ def regress_tour_modes(tours_df):
 
     """
                  tour_mode  person_id tour_type  tour_num  tour_category
-    tour_id                                                            
+    tour_id
     13327106         WALK     325051  othdiscr         1          joint
     13327130         WALK     325051      work         1      mandatory
     13327131  SHARED3FREE     325051      work         2      mandatory

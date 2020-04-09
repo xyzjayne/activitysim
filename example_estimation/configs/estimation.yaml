@@ -1,5 +1,5 @@
 
-#enable: True
+enable: True
 
 models:
   - school_location
@@ -8,6 +8,8 @@ models:
   - free_parking
   - cdap
   - mandatory_tour_frequency
+  - mandatory_tour_scheduling_work
+  - mandatory_tour_scheduling_school
   - tour_mode_choice
 
 model_settings:
@@ -47,7 +49,7 @@ model_settings:
         - override_choices
         - expression_values
         - choosers
-    omnibus_tables_append_columns: [choosers_combined]
+    omnibus_tables_append_columns: [values_combined]
 
   free_parking:
     override_choices:
@@ -60,10 +62,7 @@ model_settings:
         - choosers
     omnibus_tables_append_columns: [values_combined]
 
-# FIXME - not sure what tables are needed in estimation bundle to estimate
-# FIXME - cdap fixed_relative_proportions and interaction_coefficients
   cdap:
-# FIXME - rather than specify, should we infer cdap_activity override from the survey tour types?
     override_choices:
       file_name: estimation_choices/override_persons.csv
       column_name: cdap_activity
@@ -84,10 +83,37 @@ model_settings:
         - choosers
     omnibus_tables_append_columns: [values_combined]
 
-  tour_mode_choice:
+  mandatory_tour_scheduling_work:
     override_choices:
       file_name: estimation_choices/override_tours.csv
-      column_name: tour_mode
+      column_name: tdd
+    omnibus_tables:
+      choosers_combined:
+        - choosers
+        - override_choices
+      alternatives_combined:
+       - alternatives
+       - interaction_expression_values
+    omnibus_tables_append_columns: [choosers_combined]
+
+  mandatory_tour_scheduling_school:
+    override_choices:
+      file_name: estimation_choices/override_tours.csv
+      column_name: tdd
+    omnibus_tables:
+      choosers_combined:
+        - choosers
+        - override_choices
+      alternatives_combined:
+       - alternatives
+       - interaction_expression_values
+    omnibus_tables_append_columns: [choosers_combined]
+
+  tour_mode_choice:
+    # can't override choices because prior model overrides not implemented
+#    override_choices:
+#      file_name: estimation_choices/override_tours.csv
+#      column_name: tour_mode
     omnibus_tables:
       values_combined:
         - override_choices

@@ -74,7 +74,7 @@ With shadow pricing, and iterative treatment of each segment, the structure of t
 logger = logging.getLogger(__name__)
 
 
-def write_estimation_specs(model_settings, settings_file):
+def write_estimation_specs(estimator, model_settings, settings_file):
     """
     write sample_spec, spec, and coefficients to estimation data bundle
 
@@ -83,16 +83,14 @@ def write_estimation_specs(model_settings, settings_file):
     model_settings
     settings_file
     """
-    assert estimation.manager.estimating
-    estimation.manager.write_model_settings(model_settings, settings_file)
-    estimation.manager.write_spec(model_settings, tag='SAMPLE_SPEC')
-    estimation.manager.write_spec(model_settings, tag='SPEC')
-    estimation.manager.write_coefficients(simulate.read_model_coefficients(model_settings=model_settings))
 
-    #estimation.manager.copy_model_settings('shadow_pricing.yaml', tag='shadow_pricing')
+    estimator.write_model_settings(model_settings, settings_file)
+    estimator.write_spec(model_settings, tag='SAMPLE_SPEC')
+    estimator.write_spec(model_settings, tag='SPEC')
+    estimator.write_coefficients(simulate.read_model_coefficients(model_settings=model_settings))
 
-    estimation.manager.write_table(inject.get_injectable('size_terms'), 'size_terms', append=False)
-    estimation.manager.write_table(inject.get_table('land_use').to_frame(), 'landuse', append=False)
+    estimator.write_table(inject.get_injectable('size_terms'), 'size_terms', append=False)
+    estimator.write_table(inject.get_table('land_use').to_frame(), 'landuse', append=False)
 
 
 def spec_for_segment(model_settings, spec_id, segment_name):
@@ -112,7 +110,7 @@ def spec_for_segment(model_settings, spec_id, segment_name):
         canonical spec file with expressions in index and single column with utility coefficients
     """
 
-    spec = simulate.read_model_spec(file_name=model_settings[spec_id])
+    spec = simulate.read_model_spec(model_settings[spec_id])
     coefficients = simulate.read_model_coefficients(model_settings)
 
     if len(spec.columns) > 1:
@@ -138,6 +136,7 @@ def run_location_sample(
         persons_merged,
         skim_dict,
         dest_size_terms,
+        estimator,
         model_settings,
         chunk_size, trace_label):
     """
@@ -170,7 +169,7 @@ def run_location_sample(
 
     logger.info("Running %s with %d persons" % (trace_label, len(choosers.index)))
 
-    if estimation.manager.estimating:
+    if estimator:
         # FIXME interaction_sample will return unsampled complete alternatives with probs and pick_count
         logger.info("Estimation mode for %s using unsampled alternatives short_circuit_choices" % (trace_label,))
         sample_size = 0
@@ -183,7 +182,6 @@ def run_location_sample(
 
     locals_d = {
         'skims': skims,
-        #'segment_size': segment_name
     }
     constants = config.get_model_constants(model_settings)
     locals_d.update(constants)
@@ -262,9 +260,6 @@ def run_location_logsums(
     # logsums now does, since workplace_location_sample was on left side of merge de-dup merge
     location_sample_df['mode_choice_logsum'] = logsums
 
-    #bug
-    #location_sample_df['mode_choice_logsum'] = 7.0
-
     return location_sample_df
 
 
@@ -274,6 +269,7 @@ def run_location_simulate(
         location_sample_df,
         skim_dict,
         dest_size_terms,
+        estimator,
         model_settings,
         chunk_size, trace_label):
     """
@@ -304,19 +300,16 @@ def run_location_simulate(
 
     locals_d = {
         'skims': skims,
-        #'segment_size': segment_name
     }
     constants = config.get_model_constants(model_settings)
     if constants is not None:
         locals_d.update(constants)
 
-    if estimation.manager.estimating:
+    if estimator:
         # write choosers after annotation
-        estimation.manager.write_choosers(choosers)
-        estimation.manager.write_alternatives(alternatives)
-        estimation_hook = estimation.write_hook
-    else:
-        estimation_hook = None
+        estimator.write_choosers(choosers)
+        estimator.set_alt_id(alt_dest_col_name)
+        estimator.write_alternatives(alternatives)
 
     spec = spec_for_segment(model_settings, spec_id='SPEC', segment_name=segment_name)
 
@@ -330,10 +323,10 @@ def run_location_simulate(
         chunk_size=chunk_size,
         trace_label=trace_label,
         trace_choice_name=model_settings['DEST_CHOICE_COLUMN_NAME'],
-        estimation_hook=estimation_hook)
+        estimator=estimator)
 
-    if estimation.manager.estimating:
-        estimation.manager.write_choices(choices)
+    if estimator:
+        estimator.write_choices(choices)
 
     return choices
 
@@ -342,6 +335,7 @@ def run_location_choice(
         persons_merged_df,
         skim_dict, skim_stack,
         spc,
+        estimator,
         model_settings,
         chunk_size, trace_hh_id, trace_label
         ):
@@ -373,7 +367,6 @@ def run_location_choice(
 
     # maps segment names to compact (integer) ids
     segment_ids = model_settings['SEGMENT_IDS']
-    #segment_ids = model_settings.get('SEGMENT_IDS', {'': None})
 
     choices_list = []
     for segment_name, segment_id in segment_ids.items():
@@ -394,6 +387,7 @@ def run_location_choice(
                 choosers,
                 skim_dict,
                 dest_size_terms,
+                estimator,
                 model_settings,
                 chunk_size,
                 tracing.extend_trace_label(trace_label, 'sample.%s' % segment_name))
@@ -418,14 +412,15 @@ def run_location_choice(
                 location_sample_df,
                 skim_dict,
                 dest_size_terms,
+                estimator,
                 model_settings,
                 chunk_size,
                 tracing.extend_trace_label(trace_label, 'simulate.%s' % segment_name))
 
-        if estimation.manager.estimating:
-            estimation.manager.write_choices(choices)
+        if estimator:
+            estimator.write_choices(choices)
 
-            choices = estimation.manager.get_override_choices(choices)
+            choices = estimator.get_override_choices(choices)
 
         choices_list.append(choices)
 
@@ -440,6 +435,7 @@ def iterate_location_choice(
         model_settings,
         persons_merged, persons, households,
         skim_dict, skim_stack,
+        estimator,
         chunk_size, trace_hh_id, locutor,
         trace_label):
     """
@@ -491,6 +487,7 @@ def iterate_location_choice(
             persons_merged_df,
             skim_dict, skim_stack,
             spc,
+            estimator,
             model_settings,
             chunk_size, trace_hh_id,
             trace_label=tracing.extend_trace_label(trace_label, 'i%s' % iteration))
@@ -572,19 +569,21 @@ def workplace_location(
     trace_label = 'workplace_location'
     model_settings = config.read_model_settings('workplace_location.yaml')
 
-    if estimation.manager.begin_estimation('workplace_location'):
+    estimator = estimation.manager.begin_estimation('workplace_location')
+    if estimator:
         assert not shadow_pricing.use_shadow_pricing()
-        write_estimation_specs(model_settings, 'workplace_location.yaml')
+        write_estimation_specs(estimator, model_settings, 'workplace_location.yaml')
 
     iterate_location_choice(
         model_settings,
         persons_merged, persons, households,
         skim_dict, skim_stack,
+        estimator,
         chunk_size, trace_hh_id, locutor, trace_label
     )
 
-    if estimation.manager.estimating:
-        estimation.manager.end_estimation()
+    if estimator:
+        estimator.end_estimation()
 
 
 @inject.step()
@@ -602,17 +601,18 @@ def school_location(
     trace_label = 'school_location'
     model_settings = config.read_model_settings('school_location.yaml')
 
-    if estimation.manager.begin_estimation('school_location'):
+    estimator = estimation.manager.begin_estimation('school_location')
+    if estimator:
         assert not shadow_pricing.use_shadow_pricing()
-        write_estimation_specs(model_settings, 'school_location.yaml')
+        write_estimation_specs(estimator, model_settings, 'school_location.yaml')
 
     iterate_location_choice(
         model_settings,
         persons_merged, persons, households,
         skim_dict, skim_stack,
+        estimator,
         chunk_size, trace_hh_id, locutor, trace_label
     )
 
-    if estimation.manager.estimating:
-        estimation.manager.end_estimation()
-
+    if estimator:
+        estimator.end_estimation()

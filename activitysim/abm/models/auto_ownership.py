@@ -33,7 +33,7 @@ def auto_ownership_simulate(households,
 
     logger.info("Running %s with %d households", trace_label, len(households_merged))
 
-    model_spec = simulate.read_model_spec(model_settings=model_settings)
+    model_spec = simulate.read_model_spec(model_settings['SPEC'])
 
     coefficients_df = simulate.read_model_coefficients(model_settings)
     model_spec = simulate.eval_coefficients(model_spec, coefficients_df)
@@ -43,14 +43,12 @@ def auto_ownership_simulate(households,
 
     choosers = households_merged.to_frame()
 
-    if estimation.manager.begin_estimation('auto_ownership'):
-        estimation.manager.write_model_settings(model_settings, 'auto_ownership.yaml')
-        estimation.manager.write_spec(model_settings)
-        estimation.manager.write_coefficients(coefficients_df)
-        estimation.manager.write_choosers(choosers)
-        estimation_hook = estimation.write_hook
-    else:
-        estimation_hook = None
+    estimator = estimation.manager.begin_estimation('auto_ownership')
+    if estimator:
+        estimator.write_model_settings(model_settings, 'auto_ownership.yaml')
+        estimator.write_spec(model_settings)
+        estimator.write_coefficients(coefficients_df)
+        estimator.write_choosers(choosers)
 
     choices = simulate.simple_simulate(
         choosers=choosers,
@@ -60,13 +58,12 @@ def auto_ownership_simulate(households,
         chunk_size=chunk_size,
         trace_label=trace_label,
         trace_choice_name='auto_ownership',
-        estimation_hook=estimation_hook)
+        estimator=estimator)
 
-    if estimation.manager.estimating:
-        estimation.manager.write_choices(choices)
-        choices = estimation.manager.get_override_choices(choices)
-
-        estimation.manager.end_estimation()
+    if estimator:
+        estimator.write_choices(choices)
+        choices = estimator.get_override_choices(choices)
+        estimator.end_estimation()
 
     households = households.to_frame()
 

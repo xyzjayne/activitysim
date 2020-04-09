@@ -373,7 +373,7 @@ class SkimStack(object):
 
         logger.info("SkimStack.__init__ loaded %s keys with %s total skims"
                     % (len(self.skim_dim3),
-                       sum([len(d) for d in listvalues(self.skim_dim3)])))
+                       sum([len(d) for d in self.skim_dim3.values()])))
 
         self.usage = set()
 

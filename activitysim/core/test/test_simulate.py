@@ -29,9 +29,7 @@ def spec_name(data_dir):
 def spec(data_dir, spec_name):
     return simulate.read_model_spec(
         file_name=spec_name,
-        spec_dir=data_dir,
-        description_name='description',
-        expression_name='expression')
+        spec_dir=data_dir)
 
 
 @pytest.fixture(scope='module')

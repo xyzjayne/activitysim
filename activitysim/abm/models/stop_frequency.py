@@ -196,7 +196,7 @@ def stop_frequency(
         logging.info("%s running segment %s with %s chooser rows" %
                      (trace_label, segment_type, choosers.shape[0]))
 
-        spec = simulate.read_model_spec(file_name='stop_frequency_%s.csv' % segment_type)
+        spec = simulate.read_model_spec('stop_frequency_%s.csv' % segment_type)
 
         assert spec is not None, "spec for segment_type %s not found" % segment_type
 

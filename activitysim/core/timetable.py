@@ -196,6 +196,7 @@ class TimeTable(object):
 
         self.windows_df = windows_df
         self.windows = self.windows_df.values
+        self.checkpoint_df = None
 
         # series to map window row index value to window row's ordinal index
         self.window_row_ix = pd.Series(list(range(len(windows_df.index))), index=windows_df.index)
@@ -217,6 +218,22 @@ class TimeTable(object):
         # we want range index so we can use raw numpy
         assert (tdd_alts_df.index == list(range(tdd_alts_df.shape[0]))).all()
         self.tdd_footprints = np.asanyarray([list(r) for r in w_strings]).astype(int)
+
+    def begin_transaction(self, transaction_loggers):
+        for transaction_logger in transaction_loggers.values():
+            transaction_logger.log("timetable.begin_transaction %s" % self.windows_table_name)
+        self.checkpoint_df = self.windows_df.copy()
+        self.transaction_loggers = transaction_loggers
+        pass
+
+    def rollback(self):
+        assert self.checkpoint_df is not None
+        for logger in self.transaction_loggers.values():
+            logger.log("timetable.rollback %s" % self.windows_table_name)
+        self.windows_df = self.checkpoint_df
+        self.windows = self.windows_df.values
+        self.checkpoint_df = None
+        self.transaction_loggers = None
 
     def slice_windows_by_row_id(self, window_row_ids):
         """
@@ -260,6 +277,11 @@ class TimeTable(object):
         """
 
         assert self.windows_table_name is not None
+        if self.checkpoint_df is not None:
+            for logger in self.transaction_loggers.values():
+                logger.log("Attempt to replace_table while in transaction: %s" %
+                           self.windows_table_name, level=logging.ERROR)
+            raise RuntimeError("Attempt to replace_table while in transaction")
 
         # get windows_df from bottleneck function in case updates to self.person_window
         # do not write through to pandas dataframe

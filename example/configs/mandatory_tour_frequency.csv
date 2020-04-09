@@ -86,7 +86,7 @@ util_num_under_16_not_at_school_pre_driving_age,Number of children under 16 not 
 util_nome_urban_ft,Home is in urban area - Full-time worker interaction,(ptype == 1) & home_is_urban,0,coef_home_urban_work2,coef_home_urban_school1,,coef_home_urban_work_and_school
 util_nome_urban_pt,Home is in urban area - Part-time worker interaction,(ptype == 2) & home_is_urban,0,coef_home_urban_work2,coef_home_urban_school1,,coef_home_urban_work_and_school
 util_nome_urban_univ,Home is in urban area - University student interaction,(ptype == 3) & home_is_urban,coef_home_urban_work1,coef_home_urban_work2,0,coef_home_urban_school2,coef_home_urban_work_and_school
-util_nome_urban_non_working_adult,Home is in urban area - Non-working adult interaction,(ptype == 4) & home_is_urban,0,coef_home_urban_work2_MAYBE_A_TYPO,coef_home_urban_school1,,
+util_nome_urban_non_working_adult,Home is in urban area - Non-working adult interaction,(ptype == 4) & home_is_urban,0,coef_home_urban_work2,coef_home_urban_school1,,
 util_nome_urban_retired,Home is in urban area - Retired interaction,(ptype == 5) & home_is_urban,0,coef_home_urban_work2,coef_home_urban_school1,,
 util_nome_urban_driving_age_student,Home is in urban area - Driving-age student interaction,(ptype == 6) & home_is_urban,coef_home_urban_work1,,0,coef_home_urban_school2,coef_home_urban_work_and_school
 util_nome_urban_pre_driving_age_student,Home is in urban area - Pre-driving age child who is in school interaction,(ptype == 7) & home_is_urban,coef_home_urban_work1,,0,coef_home_urban_school2,

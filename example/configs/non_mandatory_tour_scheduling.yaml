@@ -15,3 +15,8 @@ SIMULATE_CHOOSER_COLUMNS:
   - num_escort_tours
   - num_non_escort_tours
   - adult
+
+SPEC_SEGMENTS:
+  all:
+    'SPEC': tour_scheduling_nonmandatory.csv
+    'COEFFICIENTS': tour_scheduling_nonmandatory_coeffs.csv

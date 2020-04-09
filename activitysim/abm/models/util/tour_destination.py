@@ -69,7 +69,7 @@ def run_destination_sample(
         chunk_size, trace_label):
 
     model_spec_file_name = model_settings['SAMPLE_SPEC']
-    model_spec = simulate.read_model_spec(file_name=model_spec_file_name)
+    model_spec = simulate.read_model_spec(model_spec_file_name)
     model_spec = model_spec[[spec_segment_name]]
 
     # merge persons into tours
@@ -177,7 +177,7 @@ def run_destination_simulate(
     """
 
     model_spec_file_name = model_settings['SPEC']
-    model_spec = simulate.read_model_spec(file_name=model_spec_file_name)
+    model_spec = simulate.read_model_spec(model_spec_file_name)
     model_spec = model_spec[[spec_segment_name]]
 
     # merge persons into tours

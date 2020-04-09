@@ -14,6 +14,8 @@ from activitysim.core import inject
 from activitysim.core import pipeline
 
 from .util import expressions
+from .util import estimation
+
 from .util.vectorize_tour_scheduling import vectorize_joint_tour_scheduling
 from activitysim.core.util import assign_in_place
 
@@ -32,7 +34,7 @@ def joint_tour_scheduling(
     """
     trace_label = 'joint_tour_scheduling'
     model_settings = config.read_model_settings('joint_tour_scheduling.yaml')
-    model_spec = simulate.read_model_spec(file_name='tour_scheduling_joint.csv')
+    model_spec = simulate.read_model_spec('tour_scheduling_joint.csv')
 
     tours = tours.to_frame()
     joint_tours = tours[tours.tour_category == 'joint']
@@ -76,10 +78,15 @@ def joint_tour_scheduling(
             locals_dict=locals_d,
             trace_label=trace_label)
 
+    # FIXME - need to update timetables of all joint tour participants inside in estimation_mode
+    assert not estimation.manager.estimating
+
+    timetable = inject.get_injectable("timetable")
+
     tdd_choices, timetable = vectorize_joint_tour_scheduling(
         joint_tours, joint_tour_participants,
         persons_merged,
-        tdd_alts,
+        tdd_alts, timetable,
         spec=model_spec,
         model_settings=model_settings,
         chunk_size=chunk_size,

@@ -379,7 +379,7 @@ class ShadowPriceCalculator(object):
         #     print("  max rel diff %s" % (rel_diff[c].max()))
 
         logger.info("check_fit %s iteration: %s converged: %s max_fail: %s total_fails: %s" %
-                     (self.model_selector, iteration, converged, max_fail, total_fails))
+                    (self.model_selector, iteration, converged, max_fail, total_fails))
 
         # - convergence stats
         if converged or iteration == self.max_iterations:

@@ -42,7 +42,7 @@ def atwork_subtour_frequency(tours,
     trace_label = 'atwork_subtour_frequency'
 
     model_settings = config.read_model_settings('atwork_subtour_frequency.yaml')
-    model_spec = simulate.read_model_spec(file_name='atwork_subtour_frequency.csv')
+    model_spec = simulate.read_model_spec('atwork_subtour_frequency.csv')
 
     alternatives = simulate.read_model_alts('atwork_subtour_frequency_alternatives.csv', set_index='alt')
 

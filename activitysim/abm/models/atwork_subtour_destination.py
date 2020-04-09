@@ -35,7 +35,7 @@ def atwork_subtour_destination_sample(
 
     trace_label = 'atwork_subtour_location_sample'
     model_settings = config.read_model_settings('atwork_subtour_destination.yaml')
-    model_spec = simulate.read_model_spec(file_name='atwork_subtour_destination_sample.csv')
+    model_spec = simulate.read_model_spec('atwork_subtour_destination_sample.csv')
 
     # merge persons into tours
     choosers = pd.merge(tours, persons_merged, left_on='person_id', right_index=True)
@@ -154,7 +154,7 @@ def atwork_subtour_destination_simulate(
     trace_label = 'atwork_subtour_destination_simulate'
 
     model_settings = config.read_model_settings('atwork_subtour_destination.yaml')
-    model_spec = simulate.read_model_spec(file_name='atwork_subtour_destination.csv')
+    model_spec = simulate.read_model_spec('atwork_subtour_destination.csv')
 
     # interaction_sample_simulate insists choosers appear in same order as alts
     subtours = subtours.sort_index()

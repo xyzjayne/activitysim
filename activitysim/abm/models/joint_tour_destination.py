@@ -98,7 +98,7 @@ def joint_tour_destination_sample(
 
     trace_label = 'joint_tour_destination_sample'
     model_settings = config.read_model_settings('joint_tour_destination.yaml')
-    model_spec = simulate.read_model_spec(file_name='non_mandatory_tour_destination_sample.csv')
+    model_spec = simulate.read_model_spec('non_mandatory_tour_destination_sample.csv')
 
     # choosers are tours - in a sense tours are choosing their destination
     choosers = pd.merge(joint_tours, households_merged,
@@ -266,7 +266,7 @@ def joint_tour_destination_simulate(
     model_settings = config.read_model_settings('joint_tour_destination.yaml')
 
     # - tour types are subset of non_mandatory tour types and use same expressions
-    model_spec = simulate.read_model_spec(file_name='non_mandatory_tour_destination.csv')
+    model_spec = simulate.read_model_spec('non_mandatory_tour_destination.csv')
 
     # interaction_sample_simulate insists choosers appear in same order as alts
     joint_tours = joint_tours.sort_index()

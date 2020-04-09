@@ -21,6 +21,7 @@ from .util import estimation
 
 logger = logging.getLogger(__name__)
 
+
 @inject.step()
 def cdap_simulate(persons_merged, persons, households,
                   chunk_size, trace_hh_id):
@@ -37,7 +38,7 @@ def cdap_simulate(persons_merged, persons, households,
     trace_label = 'cdap'
     model_settings = config.read_model_settings('cdap.yaml')
 
-    cdap_indiv_spec = simulate.read_model_spec(model_settings=model_settings, tag='INDIV_AND_HHSIZE1_SPEC')
+    cdap_indiv_spec = simulate.read_model_spec(model_settings['INDIV_AND_HHSIZE1_SPEC'])
 
     # Rules and coefficients for generating interaction specs for different household sizes
     cdap_interaction_coefficients = \
@@ -51,7 +52,7 @@ def cdap_simulate(persons_merged, persons, households,
     (i.e. values are not exponentiated before being normalized to probabilities summing to 1.0)
     """
     cdap_fixed_relative_proportions = \
-        simulate.read_model_spec(model_settings=model_settings, tag='FIXED_RELATIVE_PROPORTIONS_SPEC')
+        simulate.read_model_spec(model_settings['FIXED_RELATIVE_PROPORTIONS_SPEC'])
 
     persons_merged = persons_merged.to_frame()
 
@@ -69,18 +70,16 @@ def cdap_simulate(persons_merged, persons, households,
         if inject.get_injectable('locutor', False):
             spec.to_csv(config.output_file_path('cdap_spec_%s.csv' % hhsize), index=True)
 
-    if estimation.manager.begin_estimation('cdap'):
-        estimation.manager.write_model_settings(model_settings, 'cdap.yaml')
-        estimation.manager.write_spec(model_settings, tag='INDIV_AND_HHSIZE1_SPEC')
-        estimation.manager.write_spec(model_settings=model_settings, tag='FIXED_RELATIVE_PROPORTIONS_SPEC')
-        estimation.manager.write_table(cdap_interaction_coefficients, 'interaction_coefficients', index=False, append=False)
-        estimation.manager.write_choosers(persons_merged)
-        estimation_hook = estimation.write_hook
+    estimator = estimation.manager.begin_estimation('cdap')
+    if estimator:
+        estimator.write_model_settings(model_settings, 'cdap.yaml')
+        estimator.write_spec(model_settings, tag='INDIV_AND_HHSIZE1_SPEC')
+        estimator.write_spec(model_settings=model_settings, tag='FIXED_RELATIVE_PROPORTIONS_SPEC')
+        estimator.write_table(cdap_interaction_coefficients, 'interaction_coefficients', index=False, append=False)
+        estimator.write_choosers(persons_merged)
         for hhsize in range(2, cdap.MAX_HHSIZE + 1):
             spec = cdap.get_cached_spec(hhsize)
-            estimation.manager.write_table(spec, 'spec_%s' % hhsize, append=False)
-    else:
-        estimation_hook = None
+            estimator.write_table(spec, 'spec_%s' % hhsize, append=False)
 
     logger.info("Running cdap_simulate with %d persons", len(persons_merged.index))
 
@@ -92,13 +91,12 @@ def cdap_simulate(persons_merged, persons, households,
         locals_d=constants,
         chunk_size=chunk_size,
         trace_hh_id=trace_hh_id,
-        trace_label=trace_label,
-        estimation_hook=estimation_hook)
+        trace_label=trace_label)
 
-    if estimation.manager.estimating:
-        estimation.manager.write_choices(choices)
-        choices = estimation.manager.get_override_choices(choices)
-        estimation.manager.end_estimation()
+    if estimator:
+        estimator.write_choices(choices)
+        choices = estimator.get_override_choices(choices)
+        estimator.end_estimation()
 
     # - assign results to persons table and annotate
     persons = persons.to_frame()
@@ -124,10 +122,3 @@ def cdap_simulate(persons_merged, persons, households,
     tracing.print_summary('cdap_activity', persons.cdap_activity, value_counts=True)
     logger.info("cdap crosstabs:\n%s" %
                 pd.crosstab(persons.ptype, persons.cdap_activity, margins=True))
-
-    if trace_hh_id:
-
-        tracing.trace_df(inject.get_table('persons_merged').to_frame(),
-                         label="cdap",
-                         columns=['ptype', 'cdap_rank', 'cdap_activity'],
-                         warn_if_empty=True)
