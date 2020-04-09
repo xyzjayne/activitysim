@@ -402,3 +402,4 @@ Walk not available for long distances,@df.tour_mode_is_walk & (od_skims['DISTWAL
 Bike not available for long distances,@df.tour_mode_is_walk & (od_skims['DISTBIKE'] > 8),,,,,,,,-999,,,,,,,,,,,,,
 Origin density index,@(c_origin_density_index*df.origin_density_index).clip(c_origin_density_index_max) if origin_density_applied else 0,,,,,,,1,1,1,1,1,1,1,,,,,,,1,1
 Walk-express penalty for intermediate stops,@c_walk_express_penalty * ~(df.first_trip | df.first_trip),,,,,,,,,,,1,,,,,,,,,,
+TNC shared adjustment,@adjust_tnc_shared,,,,,,,,,,,,,,,,,,,,,1
