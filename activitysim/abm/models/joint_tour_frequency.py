@@ -91,7 +91,8 @@ def joint_tour_frequency(
         locals_d=constants,
         chunk_size=chunk_size,
         trace_label=trace_label,
-        trace_choice_name='joint_tour_frequency')
+        trace_choice_name='joint_tour_frequency',
+        estimator=estimator)
 
     # convert indexes to alternative names
     choices = pd.Series(model_spec.columns[choices.values], index=choices.index)

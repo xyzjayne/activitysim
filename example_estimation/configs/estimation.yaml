@@ -11,6 +11,7 @@ models:
   - mandatory_tour_scheduling_work
   - mandatory_tour_scheduling_school
   - joint_tour_frequency
+  - joint_tour_composition
   - tour_mode_choice
 
 model_settings:
