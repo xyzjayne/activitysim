@@ -7,6 +7,14 @@ import logging
 import numpy as np
 import pandas as pd
 
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.DEBUG)
+
+# create console handler with a higher log level
+ch = logging.StreamHandler()
+ch.setFormatter(logging.Formatter('%(levelname)s - %(message)s'))
+logger.addHandler(ch)
+
 survey_dir = os.path.dirname('data/survey_data/')
 output_dir = os.path.dirname('data/estimation_choices/')
 configs_dir = os.path.dirname('../example/configs/')
@@ -47,6 +55,50 @@ def infer_mandatory_tour_frequency(households, persons, tours):
     return mandatory_tour_frequency
 
 
+def infer_joint_tour_frequency(households, persons, tours):
+
+    def read_alts():
+        # right now this file just contains the start and end hour
+        alts = \
+            pd.read_csv(os.path.join(configs_dir, 'joint_tour_frequency_alternatives.csv'),
+                        comment='#', index_col='alt')
+        alts = alts.astype(np.int8)  # - NARROW
+        return alts
+
+    alts = read_alts()
+    tour_types = list(alts.columns.values)
+
+    assert(len(alts.index[(alts == 0).all(axis=1)]) == 1)  # should be one zero_tours alt
+    zero_tours_alt = alts.index[(alts == 0).all(axis=1)].values[0]
+
+    alts['joint_tour_frequency'] = alts.index
+    joint_tours = tours[tours.tour_category == 'joint']
+
+    num_tours = pd.DataFrame(index=households.index)
+    for tour_type in tour_types:
+        joint_tour_is_tour_type = (joint_tours.tour_type == tour_type)
+        if joint_tour_is_tour_type.any():
+            num_tours[tour_type] = joint_tours[joint_tour_is_tour_type].groupby('household_id').size().reindex(households.index).fillna(0)
+        else:
+            logger.warning("WARNING infer_joint_tour_frequency - no tours of type '%s'" % tour_type)
+            num_tours[tour_type] = 0
+    num_tours = num_tours.fillna(0).astype(int)
+
+    # need to do index waltz because pd.merge doesn't preserve index in this case
+    jtf = pd.merge(num_tours.reset_index(), alts, left_on=tour_types, right_on=tour_types, how='left').set_index(households.index.name)
+
+    if jtf.joint_tour_frequency.isna().any():
+        bad_tour_frequencies = jtf.joint_tour_frequency.isna()
+        logger.warning("WARNING Bad joint tour frequencies\n\n")
+        logger.warning("\nWARNING Bad joint tour frequencies: num_tours\n%s\n", num_tours[bad_tour_frequencies])
+        logger.warning("\nWARNING Bad joint tour frequencies: num_tours\n%s\n", joint_tours[joint_tours.household_id.isin(bad_tour_frequencies.index)])
+        bug
+
+    logger.info("infer_joint_tour_frequency: %s households with joint tours", (jtf.joint_tour_frequency != zero_tours_alt).sum())
+
+    return jtf.joint_tour_frequency
+
+
 def infer_cdap_activity(households, persons, tours):
 
     mandatory_tour_types = ['work', 'school']
@@ -83,8 +135,8 @@ def infer_tour_scheduling(households, persons, tours):
 
     tdd_alts = read_tdd_alts()
 
-    #assert tours.start.isin(tdd_alts.start).all(), "not all tour starts in tdd_alts"
-    #assert tours.end.isin(tdd_alts.end).all(), "not all tour starts in tdd_alts"
+    assert tours.start.isin(tdd_alts.start).all(), "not all tour starts in tdd_alts"
+    assert tours.end.isin(tdd_alts.end).all(), "not all tour starts in tdd_alts"
 
     tdds = pd.merge(tours[['start', 'end']], tdd_alts, left_on=['start', 'end'], right_on=['start', 'end'], how='left')
 
@@ -94,10 +146,11 @@ def infer_tour_scheduling(households, persons, tours):
         print(bad_tdds)
         bug
 
-    print("tdd_alts\n",tdd_alts, "\n")
-    print("tours\n",tours[['start', 'end']])
-    print("tdds\n",tdds)
+    # print("tdd_alts\n",tdd_alts, "\n")
+    # print("tours\n",tours[['start', 'end']])
+    # print("tdds\n",tdds)
     return tdds.tdd
+
 
 households = pd.read_csv(os.path.join(survey_dir, surveys['households']), index_col='household_id')
 persons = pd.read_csv(os.path.join(survey_dir, surveys['persons']), index_col='person_id')
@@ -106,6 +159,8 @@ tours = pd.read_csv(os.path.join(survey_dir, surveys['tours']))
 persons['cdap_activity'] = infer_cdap_activity(households, persons, tours)
 
 persons['mandatory_tour_frequency'] = infer_mandatory_tour_frequency(households, persons, tours)
+
+households['joint_tour_frequency'] = infer_joint_tour_frequency(households, persons, tours)
 
 tours['tdd'] = infer_tour_scheduling(households, persons, tours)
 

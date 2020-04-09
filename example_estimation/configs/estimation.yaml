@@ -10,6 +10,7 @@ models:
   - mandatory_tour_frequency
   - mandatory_tour_scheduling_work
   - mandatory_tour_scheduling_school
+  - joint_tour_frequency
   - tour_mode_choice
 
 model_settings:
@@ -108,6 +109,28 @@ model_settings:
        - alternatives
        - interaction_expression_values
     omnibus_tables_append_columns: [choosers_combined]
+
+  joint_tour_frequency:
+    override_choices:
+      file_name: estimation_choices/override_households.csv
+      column_name: joint_tour_frequency
+    omnibus_tables:
+      values_combined:
+        - override_choices
+        - expression_values
+        - choosers
+    omnibus_tables_append_columns: [values_combined]
+
+  joint_tour_composition:
+    override_choices:
+      file_name: estimation_choices/override_tours.csv
+      column_name: composition
+    omnibus_tables:
+      values_combined:
+        - override_choices
+        - expression_values
+        - choosers
+    omnibus_tables_append_columns: [values_combined]
 
   tour_mode_choice:
     # can't override choices because prior model overrides not implemented

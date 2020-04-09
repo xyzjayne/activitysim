@@ -87,7 +87,6 @@ def mandatory_tour_frequency(persons_merged,
 
     estimator = estimation.manager.begin_estimation('mandatory_tour_frequency')
     if estimator:
-
         estimator.write_table(model_spec, 'evaled_model_spec', append=False)
         estimator.write_model_settings(model_settings, model_settings_file_name)
         estimator.write_spec(model_settings)

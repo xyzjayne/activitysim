@@ -17,6 +17,8 @@ from activitysim.core import config
 from activitysim.core import inject
 
 from .util import expressions
+from .util import estimation
+
 from .util.overlap import hh_time_window_overlap
 from .util.tour_frequency import process_joint_tours
 
@@ -33,8 +35,9 @@ def joint_tour_frequency(
     alternatives above).
     """
     trace_label = 'joint_tour_frequency'
-    model_settings = config.read_model_settings('joint_tour_frequency.yaml')
-    model_spec = simulate.read_model_spec('joint_tour_frequency.csv')
+    model_settings_file_name = 'joint_tour_frequency.yaml'
+
+    model_settings = config.read_model_settings(model_settings_file_name)
 
     alternatives = simulate.read_model_alts('joint_tour_frequency_alternatives.csv', set_index='alt')
 
@@ -66,10 +69,20 @@ def joint_tour_frequency(
             locals_dict=locals_dict,
             trace_label=trace_label)
 
-    # - simple_simulate
+    model_spec = simulate.read_model_spec(model_settings['SPEC'])
+    coefficients_df = simulate.read_model_coefficients(model_settings)
+    model_spec = simulate.eval_coefficients(model_spec, coefficients_df)
 
     nest_spec = config.get_logit_model_settings(model_settings)
     constants = config.get_model_constants(model_settings)
+
+    estimator = estimation.manager.begin_estimation('joint_tour_frequency')
+    if estimator:
+        estimator.write_table(model_spec, 'evaled_model_spec', append=False)
+        estimator.write_model_settings(model_settings, model_settings_file_name)
+        estimator.write_spec(model_settings)
+        estimator.write_coefficients(coefficients_df)
+        estimator.write_choosers(multi_person_households)
 
     choices = simulate.simple_simulate(
         choosers=multi_person_households,
@@ -82,6 +95,11 @@ def joint_tour_frequency(
 
     # convert indexes to alternative names
     choices = pd.Series(model_spec.columns[choices.values], index=choices.index)
+
+    if estimator:
+        estimator.write_choices(choices)
+        choices = estimator.get_override_choices(choices)
+        estimator.end_estimation()
 
     # - create joint_tours based on joint_tour_frequency choices
 
