@@ -1,6 +1,10 @@
 
+import numpy as np
 import pandas as pd
+from typing import Mapping
 from larch import P, X
+from larch.model.abstract_model import AbstractChoiceModel
+from larch.model.tree import NestingTree
 
 
 def cv_to_ca(alt_values, dtype='float64'):
@@ -199,6 +203,35 @@ def explicit_value_parameters_from_spec(spec, p_col, model):
 					holdfast=True,
 				)
 
+def explicit_value_parameters(model):
+	"""
+	Define and lock parameters given as fixed values.
+
+	Parameters
+	----------
+	model : larch.Model
+		The model to insert fixed value parameters.
+
+	Returns
+	-------
+
+	"""
+	for i in model.pf.index:
+		try:
+			j = float(i)
+		except:
+			pass
+		else:
+			model.set_value(
+				i,
+				value=j,
+				initvalue=j,
+				nullvalue=j,
+				minimum=j,
+				maximum=j,
+				holdfast=True,
+			)
+
 def apply_coefficients(coefficients, model):
 	"""
 	Read the coefficients CSV file to a DataFrame and set model parameters.
@@ -212,12 +245,101 @@ def apply_coefficients(coefficients, model):
 		Apply coefficient values and constraints to this model.
 
 	"""
-	assert isinstance(coefficients, pd.DataFrame)
-	assert all(coefficients.columns == ['coefficient_name','value','constrain'])
-	for i in coefficients.itertuples():
-		model.set_value(
-			i.coefficient_name,
-			value=i.value,
-			holdfast=(i.constrain=='T')
-		)
+	if isinstance(model, dict):
+		for m in model.values():
+			apply_coefficients(coefficients, m)
+	else:
+		assert isinstance(coefficients, pd.DataFrame)
+		assert all(coefficients.columns == ['coefficient_name','value','constrain'])
+		assert isinstance(model, AbstractChoiceModel)
+		explicit_value_parameters(model)
+		for i in coefficients.itertuples():
+			if i.coefficient_name in model:
+				model.set_value(
+					i.coefficient_name,
+					value=i.value,
+					holdfast=(i.constrain=='T')
+				)
+		coefficients = coefficients.set_index('coefficient_name')
+		for param in model.pf.index:
+			if "*" in param:
+				value = 1
+				for p_part in param.split("*"):
+					value *= coefficients.loc[p_part,'value']
+				holdfast = coefficients.loc[param.split("*")[0],'constrain']=='T'
+				model.set_value(
+					param,
+					value=value,
+					holdfast=holdfast
+				)
 
+
+def apply_coef_template(linear_utility, template_col, condition=None):
+	"""
+	Apply a coefficient template over a linear utility function.
+
+	Parameters
+	----------
+	linear_utility : LinearFunction_C
+	template_col : Mapping
+	condition : any
+
+	Returns
+	-------
+	LinearFunction_C
+	"""
+	result = sum(
+		P("*".join(template_col.get(ip, ip) for ip in i.param.split("*"))) * i.data * i.scale
+		for i in linear_utility
+	)
+	if condition is not None:
+		result = result * condition
+	return result
+
+
+def construct_nesting_tree(alternatives, nesting_settings):
+	"""
+	Construct a NestingTree from ActivitySim settings.
+
+	Parameters
+	----------
+	alternatives : Mapping or Sequence
+		If given as a Mapping (dict), the keys are the alternative names
+		as strings, and the values are alternative code numbers to use
+		in larch.  If given as a Sequence, the values are the alternative
+		names, and unique sequential codes will be created starting from 1.
+	nesting_settings : Mapping
+		The 'NESTS' section of the ActivitySim config file.
+
+	Returns
+	-------
+	NestingTree
+	"""
+	if not isinstance(alternatives, Mapping):
+		alt_names = list(alternatives)
+		alt_codes = np.arange(1, len(alt_names) + 1)
+		alternatives = dict(zip(alt_names, alt_codes))
+
+	tree = NestingTree()
+	nest_names_to_codes = alternatives.copy()
+	nest_names_to_codes['root'] = 0
+	for alt_name, alt_code in alternatives.items():
+		tree.add_node(alt_code, name=alt_name)
+
+	def make_nest(cfg, parent_code=0):
+		nonlocal nest_names_to_codes
+		if cfg['name'] != 'root':
+			if cfg['name'] not in nest_names_to_codes:
+				n = tree.new_node(name=cfg['name'], parameter=str(cfg['coefficient']), parent=parent_code)
+				nest_names_to_codes[cfg['name']] = n
+			else:
+				tree.add_edge(parent_code, nest_names_to_codes[cfg['name']])
+		for a in cfg['alternatives']:
+			if isinstance(a, str):
+				tree.add_edge(nest_names_to_codes[cfg['name']], nest_names_to_codes[a])
+			else:
+				make_nest(a, parent_code=nest_names_to_codes[cfg['name']])
+
+	make_nest(nesting_settings)
+
+	return tree
