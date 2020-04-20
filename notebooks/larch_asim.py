@@ -232,7 +232,7 @@ def explicit_value_parameters(model):
 				holdfast=True,
 			)
 
-def apply_coefficients(coefficients, model):
+def apply_coefficients(coefficients, model, minimum=None, maximum=None):
 	"""
 	Read the coefficients CSV file to a DataFrame and set model parameters.
 
@@ -250,28 +250,30 @@ def apply_coefficients(coefficients, model):
 			apply_coefficients(coefficients, m)
 	else:
 		assert isinstance(coefficients, pd.DataFrame)
-		assert all(coefficients.columns == ['coefficient_name','value','constrain'])
+		assert all(coefficients.columns == ['value','constrain'])
+		assert coefficients.index.name == 'coefficient_name'
 		assert isinstance(model, AbstractChoiceModel)
 		explicit_value_parameters(model)
 		for i in coefficients.itertuples():
-			if i.coefficient_name in model:
+			if i.Index in model:
 				model.set_value(
-					i.coefficient_name,
+					i.Index,
 					value=i.value,
-					holdfast=(i.constrain=='T')
+					holdfast=(i.constrain=='T'),
+					minimum=minimum,
+					maximum=maximum,
 				)
-		coefficients = coefficients.set_index('coefficient_name')
-		for param in model.pf.index:
-			if "*" in param:
-				value = 1
-				for p_part in param.split("*"):
-					value *= coefficients.loc[p_part,'value']
-				holdfast = coefficients.loc[param.split("*")[0],'constrain']=='T'
-				model.set_value(
-					param,
-					value=value,
-					holdfast=holdfast
-				)
+		# for param in model.pf.index:
+		# 	if "*" in param:
+		# 		value = 1
+		# 		for p_part in param.split("*"):
+		# 			value *= coefficients.loc[p_part,'value']
+		# 		holdfast = coefficients.loc[param.split("*")[0],'constrain']=='T'
+		# 		model.set_value(
+		# 			param,
+		# 			value=value,
+		# 			holdfast=holdfast
+		# 		)
 
 
 def apply_coef_template(linear_utility, template_col, condition=None):
@@ -343,3 +345,29 @@ def construct_nesting_tree(alternatives, nesting_settings):
 	make_nest(nesting_settings)
 
 	return tree
+
+
+# double_parameters = set()
+# for alt_code, alt_name in tree.elemental_names().items():
+#     # Read in base utility function for this alt_name
+#     u = larch_asim.linear_utility_from_spec(
+#         spec, x_col='Label', p_col=alt_name,
+#         ignore_x=('#',),
+#     )
+#     for purpose in purposes:
+#         # Keep track of double parameters
+#         for i in u:
+#             if '*' in i.param:
+#                 double_parameters.add(
+#                     "*".join(coef_template[purpose].get(ip,ip) for ip in i.param.split("*"))
+#                 )
+#         # Modify utility function based on template for purpose
+#         u_purp = sum(
+#             (
+#                 P("*".join(coef_template[purpose].get(ip,ip) for ip in i.param.split("*")))
+#                 * i.data * i.scale
+#             )
+#             for i in u
+#         )
+#         m[purpose].utility_co[alt_code] = u_purp
+# double_parameters
