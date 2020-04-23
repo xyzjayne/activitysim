@@ -29,6 +29,7 @@ coef_cars34_asc_county,-0.2372,F
 coef_cars2_density_0_10_no_workers,-0.2028,F
 coef_cars34_density_10_up_no_workers,-0.1766,F
 coef_cars2_density_10_up_no_workers,-0.1106,F
+coef_cars2_density_10_up_workers,-0.1106,F
 coef_cars1_density_10_up_no_workers,-0.0152,F
 coef_cars2_hh_income_30_up,0.0083,F
 coef_cars3_hh_income_30_up,0.011000000000000001,F

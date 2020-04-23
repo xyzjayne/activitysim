@@ -3,36 +3,36 @@ LOGIT_TYPE: NL
 
 NESTS:
   name: root
-  coefficient: 1.00
+  coefficient: coef_nest_root
   alternatives:
       - name: AUTO
-        coefficient: 0.72
+        coefficient: coef_nest_AUTO
         alternatives:
             - name: DRIVEALONE
-              coefficient: 0.35
+              coefficient: coef_nest_AUTO_DRIVEALONE
               alternatives:
                 - DRIVEALONEFREE
                 - DRIVEALONEPAY
             - name: SHAREDRIDE2
-              coefficient: 0.35
+              coefficient: coef_nest_AUTO_SHAREDRIDE2
               alternatives:
                 - SHARED2FREE
                 - SHARED2PAY
             - name: SHAREDRIDE3
-              coefficient: 0.35
+              coefficient: coef_nest_AUTO_SHAREDRIDE3
               alternatives:
                 - SHARED3FREE
                 - SHARED3PAY
       - name: NONMOTORIZED
-        coefficient: 0.72
+        coefficient: coef_nest_NONMOTORIZED
         alternatives:
           - WALK
           - BIKE
       - name: TRANSIT
-        coefficient:  0.72
+        coefficient:  coef_nest_TRANSIT
         alternatives:
             - name: WALKACCESS
-              coefficient: 0.5
+              coefficient: coef_nest_TRANSIT_WALKACCESS
               alternatives:
               - WALK_LOC
               - WALK_LRF
@@ -40,7 +40,7 @@ NESTS:
               - WALK_HVY
               - WALK_COM
             - name: DRIVEACCESS
-              coefficient: 0.5
+              coefficient: coef_nest_TRANSIT_DRIVEACCESS
               alternatives:
               - DRIVE_LOC
               - DRIVE_LRF
@@ -48,7 +48,7 @@ NESTS:
               - DRIVE_HVY
               - DRIVE_COM
       - name: MAAS
-        coefficient: 0.72
+        coefficient: coef_nest_MAAS
         alternatives:
           - TAXI
           - TNC_SINGLE
