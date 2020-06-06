@@ -1,0 +1,30 @@
+
+enable: True
+
+bundles:
+  - auto_ownership
+
+survey_tables:
+  households:
+    file_name: survey_data/override_households.csv
+    index_col: household_id
+  persons:
+    file_name:  survey_data/override_persons.csv
+    index_col: person_id
+  tours:
+    file_name:  survey_data/override_tours.csv
+  joint_tour_participants:
+    file_name:  survey_data/override_joint_tour_participants.csv
+  
+estimation_table_recipes:
+  simple_simulate:
+    omnibus_tables:
+      values_combined:
+        - choices
+        - override_choices
+        - expression_values
+        - choosers
+    omnibus_tables_append_columns: [values_combined]
+
+model_estimation_table_types:
+  auto_ownership: simple_simulate
