@@ -34,7 +34,7 @@ def cdap_simulate(persons_merged, persons, households,
 
     trace_label = 'cdap'
     model_settings = config.read_model_settings('cdap.yaml')
-    person_type_map = model_settings.get('PERSON_TYPE_MAP', {})
+    estimator = estimation.manager.begin_estimation('cdap')
     cdap_indiv_spec = simulate.read_model_spec(file_name=model_settings['INDIV_AND_HHSIZE1_SPEC'])
 
     # Rules and coefficients for generating interaction specs for different household sizes
