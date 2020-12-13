@@ -161,10 +161,8 @@ def stop_frequency(
     preprocessor_settings = model_settings.get('preprocessor', None)
     if preprocessor_settings:
 
-        # hack: preprocessor adds origin column in place if it does not exist already
-        assert 'origin' in tours_merged
-        assert 'destination' in tours_merged
-        od_skim_stack_wrapper = network_los.get_default_skim_dict().wrap('origin', 'destination')
+        # FIXME: preprocessor only needs 'DIST' skim to add distance_in_miles: should be a tour attribute?
+        od_skim_stack_wrapper = skim_dict.wrap('origin', 'destination')
         skims = [od_skim_stack_wrapper]
 
         locals_dict = {
