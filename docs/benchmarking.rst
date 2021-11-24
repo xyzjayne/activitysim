@@ -163,8 +163,8 @@ against the community ``asim-benchmarks`` to submit those results.
 Assuming you are in (or first ``cd`` into) the ``asim-benchmarks`` directory, You can
 do this from the command line using the following steps::
 
-    git add results
     pre-commit run    # required on Windows only, see note
+    git add results
     git commit -m "adding benchmark results"
     git push
     gh pr create
